@@ -11,7 +11,7 @@ steps:
   displayName: 'Unit tests'
   inputs:
     command: 'test'
-    projects: '$(Build.SourcesDirectory)/**/*.Tests.csproj'
+    projects: '**/*.Tests.csproj'
     arguments: '--collect:"XPlat Code Coverage"'
     publishTestResults: true
 
@@ -21,7 +21,7 @@ steps:
     command: 'publish'
     publishWebProjects: false
     projects: |
-      $(Build.SourcesDirectory)/**/*.csproj
+      **/*.csproj
       !*.Tests/*.csproj
     arguments: '--output "$(Build.BinariesDirectory)"'
     zipAfterPublish: false
@@ -29,7 +29,7 @@ steps:
 - task: PublishCodeCoverageResults@1
   inputs:
     codeCoverageTool: 'Cobertura'
-    summaryFileLocation: '$(Build.SourcesDirectory)/**/coverage.cobertura.xml'
+    summaryFileLocation: '**/coverage.cobertura.xml'
 
 - task: PublishBuildArtifacts@1
   inputs:
