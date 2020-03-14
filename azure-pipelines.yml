@@ -8,17 +8,31 @@ steps:
     version: '3.1.x'
 
 - task: DotNetCoreCLI@2
+  displayName: 'Unit tests'
   inputs:
     command: 'test'
-    projects: '**/*.Tests.csproj'
+    projects: '$(Build.SourcesDirectory)/**/*.Tests.csproj'
     arguments: '--collect:"XPlat Code Coverage"'
+    publishTestResults: true
 
 - task: DotNetCoreCLI@2
+  displayName: 'Publish'
   inputs:
     command: 'publish'
     publishWebProjects: false
     projects: |
-      **/*.csproj
+      $(Build.SourcesDirectory)/**/*.csproj
       !*.Tests/*.csproj
     arguments: '--output "$(Build.BinariesDirectory)"'
     zipAfterPublish: false
+
+- task: PublishCodeCoverageResults@1
+  inputs:
+    codeCoverageTool: 'Cobertura'
+    summaryFileLocation: '$(Build.SourcesDirectory)/**/coverage.cobertura.xml'
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(Build.BinariesDirectory)'
+    ArtifactName: 'drop'
+    publishLocation: 'Container'
