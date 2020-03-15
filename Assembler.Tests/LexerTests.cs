@@ -100,7 +100,41 @@ namespace CayLang.Assembler.Tests
             Assert.Equal('\n', lexer.Current);
         }
 
+        #region SkipWhitespace rule
         [Theory]
+        [InlineData(" ")]
+        [InlineData("\t")]
+        [InlineData("\n")]
+        [InlineData("\r")]
+        [InlineData("\v")]
+        public void SkipWhitespaceAdvances(string data)
+        {
+            using var lexer = new Lexer(new StringReader(data + "1"))
+            {
+                Mode = Lexer.LexerMode.SkipWhitespace
+            };
+            lexer.SkipWhitespace();
+
+            Assert.Equal('1', lexer.Current);
+            Assert.Equal(Lexer.LexerMode.SkipWhitespace, lexer.Mode);
+        }
+
+        [Fact]
+        public void SkipWhitespaceTransitionsToStart()
+        {
+            using var lexer = new Lexer(new StringReader("1"))
+            {
+                Mode = Lexer.LexerMode.SkipWhitespace
+            };
+            lexer.SkipWhitespace();
+
+            Assert.Equal(Lexer.LexerMode.Start, lexer.Mode);
+
+        }
+		#endregion
+
+		#region Start rule
+		[Theory]
         [InlineData(" ")]
         [InlineData("\n")]
         [InlineData("\t")]
@@ -164,5 +198,6 @@ namespace CayLang.Assembler.Tests
             Assert.Empty(lexer.Lexeme);
             Assert.Equal('1', lexer.Current);
         }
-    }
+		#endregion
+	}
 }

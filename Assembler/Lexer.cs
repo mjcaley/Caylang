@@ -111,7 +111,7 @@ namespace Caylang.Assembler
             Advance();
         }
 
-        public Token SkipWhitespace()
+        public void SkipWhitespace()
         {
             switch (Current)
             {
@@ -122,8 +122,6 @@ namespace Caylang.Assembler
                     Mode = LexerMode.Start;
                     break;
             }
-
-            return null;
         }
 
         public Token Start()
