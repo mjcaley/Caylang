@@ -139,7 +139,6 @@ namespace CayLang.Assembler.Tests
             lexer.SkipWhitespace();
 
             Assert.Equal(Lexer.LexerMode.Start, lexer.Mode);
-
         }
 		#endregion
 
@@ -169,6 +168,7 @@ namespace CayLang.Assembler.Tests
 
             Assert.Equal(type, token.Type);
             Assert.Equal(1, token.Line);
+            Assert.Equal(Lexer.LexerMode.Start, lexer.Mode);
         }
 
         [Theory]
@@ -207,6 +207,7 @@ namespace CayLang.Assembler.Tests
             Assert.Null(token);
             Assert.Empty(lexer.Lexeme);
             Assert.Equal('1', lexer.Current);
+            Assert.Equal(Lexer.LexerMode.String, lexer.Mode);
         }
         #endregion
 
