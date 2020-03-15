@@ -94,6 +94,14 @@ namespace Caylang.Assembler
             Advance();
         }
 
+        public string Consume()
+        {
+            var lexeme = Lexeme;
+            Lexeme = "";
+
+            return lexeme;
+        }
+
         public static List<Token> LexString(string data)
         {
             var stream = new StringReader(data);
@@ -198,6 +206,31 @@ namespace Caylang.Assembler
                     break;
                 default:
                     return NewToken(TokenType.Error, Lexeme);
+            }
+
+            return null;
+        }
+
+        public Token Digit()
+        {
+            switch (Current)
+            {
+                case 'x':
+                    Append();
+                    Mode = LexerMode.Hexadecimal;
+                    break;
+                case 'b':
+                    Append();
+                    Mode = LexerMode.Binary;
+                    break;
+                case '.':
+                    Append();
+                    Mode = LexerMode.Float;
+                    break;
+                default:
+                    Append();
+                    Mode = LexerMode.Start;
+                    return NewToken(TokenType.Integer, Consume());
             }
 
             return null;

@@ -69,6 +69,18 @@ namespace CayLang.Assembler.Tests
         }
 
         [Fact]
+        public void ConsumeTest()
+        {
+            var input = "1";
+            using var lexer = new Lexer(new StringReader(input));
+            lexer.Append();
+            var result = lexer.Consume();
+
+            Assert.Equal(input, result);
+            Assert.Empty(lexer.Lexeme);
+        }
+
+        [Fact]
         public void AdvanceAssignsNextValueToCurrent()
         {
             using var lexer = new Lexer(new StringReader("123"));
@@ -249,6 +261,41 @@ namespace CayLang.Assembler.Tests
             Assert.Null(token);
             Assert.Equal("-" + data, lexer.Lexeme);
             Assert.Equal(Lexer.LexerMode.Decimal, lexer.Mode);
+        }
+        #endregion
+
+        #region Digit rule
+        [Theory]
+        [InlineData("x", Lexer.LexerMode.Hexadecimal)]
+        [InlineData("b", Lexer.LexerMode.Binary)]
+        [InlineData(".", Lexer.LexerMode.Float)]
+        public void DigitAppendAndTransition(string data, Lexer.LexerMode mode)
+        {
+            var input = "0" + data;
+            using var lexer = new Lexer(new StringReader(input))
+            {
+                Mode = Lexer.LexerMode.Digit
+            };
+            lexer.Append();
+            var token = lexer.Digit();
+
+            Assert.Null(token);
+            Assert.Equal(mode, lexer.Mode);
+            Assert.Equal(input, lexer.Lexeme);
+        }
+
+        [Fact]
+        public void DigitEmitsIntegerAndTransitionsToStart()
+        {
+            using var lexer = new Lexer(new StringReader("1"))
+            {
+                Mode = Lexer.LexerMode.Digit
+            };
+            var token = lexer.Digit();
+
+            Assert.Equal(TokenType.Integer, token.Type);
+            Assert.Equal("1", token.Value);
+            Assert.Equal(Lexer.LexerMode.Start, lexer.Mode);
         }
 		#endregion
 	}
