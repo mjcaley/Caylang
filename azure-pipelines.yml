@@ -1,3 +1,6 @@
+variables:
+  buildConfiguration: 'Release'
+
 pool:
   vmImage: 'ubuntu-latest'
 
@@ -8,9 +11,17 @@ steps:
     version: '3.1.x'
 
 - task: DotNetCoreCLI@2
+  displayName: 'Build'
+  inputs:
+    command: 'build'
+    projects: '**/*.csproj'
+    arguments: '--configuration $(buildConfiguration)'
+
+- task: DotNetCoreCLI@2
   displayName: 'Unit tests'
   inputs:
     command: 'test'
+    nobuild: true
     projects: '**/*.Tests.csproj'
     arguments: '--collect:"XPlat Code Coverage"'
     publishTestResults: true
@@ -33,15 +44,12 @@ steps:
     summaryFileLocation: '$(Build.ArtifactStagingDirectory)/Cobertura.xml'
 
 - task: DotNetCoreCLI@2
-  displayName: 'Publish'
+  displayName: 'Package'
   inputs:
-    command: 'publish'
-    publishWebProjects: false
-    projects: |
-      **/*.csproj
-      !*.Tests/*.csproj
-    arguments: '--output "$(Build.BinariesDirectory)"'
-    zipAfterPublish: false
+    command: 'pack'
+    packagesToPack: '**/*.csproj;!*.Tests/*.csproj'
+    nobuild: true
+    outputDir: $(Build.BinariesDirectory)
 
 - task: PublishBuildArtifacts@1
   inputs:
