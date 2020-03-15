@@ -19,7 +19,7 @@ steps:
   condition: succeededOrFailed()
   displayName: 'Install ReportGenerator'
 
-- script: reportgenerator -reports:**/coverage.cobertura.xml -reporttypes:Cobertura -targetdir:$(Build.ArtifactStagingDirectory)
+- script: reportgenerator -reports:$(Agent.TempDirectory)/**/coverage.cobertura.xml -reporttypes:Cobertura -targetdir:$(Build.ArtifactStagingDirectory)
 
 - task: PublishCodeCoverageResults@1
   condition: succeededOrFailed()
