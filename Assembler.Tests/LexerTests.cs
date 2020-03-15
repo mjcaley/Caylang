@@ -93,6 +93,13 @@ namespace CayLang.Assembler.Tests
             Assert.Equal(2, lexer.Line);
         }
 
+        [Fact]
+        public void AdvanceConsumesBothCarriageReturnNewLine(){
+            using var lexer = new Lexer(new StringReader("\r\n"));
+
+            Assert.Equal('\n', lexer.Current);
+        }
+
         [Theory]
         [InlineData(" ")]
         [InlineData("\n")]
