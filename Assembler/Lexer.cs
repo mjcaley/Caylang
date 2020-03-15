@@ -88,6 +88,12 @@ namespace Caylang.Assembler
             return previous;
         }
 
+        public void Append()
+        {
+            Lexeme += Current;
+            Advance();
+        }
+
         public static List<Token> LexString(string data)
         {
             var stream = new StringReader(data);
@@ -103,12 +109,6 @@ namespace Caylang.Assembler
         private Token NewToken(TokenType type, string value = "")
         {
             return new Token(type, value, Line);
-        }
-
-        private void Append()
-        {
-            Lexeme += Current;
-            Advance();
         }
 
         public void SkipWhitespace()
@@ -171,6 +171,33 @@ namespace Caylang.Assembler
                 default:
                     Advance();
                     break;
+            }
+
+            return null;
+        }
+
+        public Token Negative()
+        {
+            switch (Current)
+            {
+                case '0':
+                    Append();
+                    Mode = LexerMode.Digit;
+                    break;
+                case '1':
+                case '2':
+                case '3':
+                case '4':
+                case '5':
+                case '6':
+                case '7':
+                case '8':
+                case '9':
+                    Append();
+                    Mode = LexerMode.Decimal;
+                    break;
+                default:
+                    return NewToken(TokenType.Error, Lexeme);
             }
 
             return null;

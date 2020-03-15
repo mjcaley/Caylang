@@ -59,6 +59,16 @@ namespace CayLang.Assembler.Tests
         }
 
         [Fact]
+        public void AppendTest()
+        {
+            using var lexer = new Lexer(new StringReader("123"));
+
+            Assert.Empty(lexer.Lexeme);
+            lexer.Append();
+            Assert.Equal("1", lexer.Lexeme);
+        }
+
+        [Fact]
         public void AdvanceAssignsNextValueToCurrent()
         {
             using var lexer = new Lexer(new StringReader("123"));
@@ -197,6 +207,47 @@ namespace CayLang.Assembler.Tests
             Assert.Null(token);
             Assert.Empty(lexer.Lexeme);
             Assert.Equal('1', lexer.Current);
+        }
+        #endregion
+
+        #region Negative rule
+        [Fact]
+        public void NegativeTransitionsToDigit()
+        {
+            using var lexer = new Lexer(new StringReader("-0"))
+            {
+                Mode = Lexer.LexerMode.Negative
+            };
+            lexer.Append();
+            var token = lexer.Negative();
+
+            Assert.Null(token);
+            Assert.Equal("-0", lexer.Lexeme);
+            Assert.Equal(Lexer.LexerMode.Digit, lexer.Mode);
+        }
+
+        [Theory]
+        [InlineData("1")]
+        [InlineData("2")]
+        [InlineData("3")]
+        [InlineData("4")]
+        [InlineData("5")]
+        [InlineData("6")]
+        [InlineData("7")]
+        [InlineData("8")]
+        [InlineData("9")]
+        public void NegativeTransitionsToDecimal(string data)
+        {
+            using var lexer = new Lexer(new StringReader("-" + data))
+            {
+                Mode = Lexer.LexerMode.Negative
+            };
+            lexer.Append();
+            var token = lexer.Negative();
+
+            Assert.Null(token);
+            Assert.Equal("-" + data, lexer.Lexeme);
+            Assert.Equal(Lexer.LexerMode.Decimal, lexer.Mode);
         }
 		#endregion
 	}
