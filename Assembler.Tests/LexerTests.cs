@@ -394,6 +394,56 @@ namespace CayLang.Assembler.Tests
 
         #region IsHexadecimal rule
 
+        [Theory]
+        [InlineData('0')]
+        [InlineData('1')]
+        [InlineData('2')]
+        [InlineData('3')]
+        [InlineData('4')]
+        [InlineData('5')]
+        [InlineData('6')]
+        [InlineData('7')]
+        [InlineData('8')]
+        [InlineData('9')]
+        [InlineData('a')]
+        [InlineData('b')]
+        [InlineData('c')]
+        [InlineData('d')]
+        [InlineData('e')]
+        [InlineData('f')]
+        public void IsHexadecimalAppendsToLexeme(char data)
+        {
+            using var lexer = new Lexer(new StringReader("0x" + data))
+            {
+                Mode = Lexer.LexerMode.IsHexadecimal
+            };
+            lexer.Append();
+            lexer.Append();
+            var token = lexer.IsHexadecimal();
+
+            Assert.Null(token);
+            Assert.Equal("0x" + data, lexer.Lexeme);
+            Assert.Equal(Lexer.LexerMode.IsHexadecimal, lexer.Mode);
+        }
+
+        [Fact]
+        public void IsHexadecimalEmitsIntegerTokenWhenNoMatch()
+        {
+            using var lexer = new Lexer(new StringReader("0x1 "))
+            {
+                Mode = Lexer.LexerMode.IsHexadecimal
+            };
+            lexer.Append();
+            lexer.Append();
+            lexer.Append();
+            var token = lexer.IsHexadecimal();
+
+            Assert.NotNull(token);
+            Assert.Equal(TokenType.IntegerLiteral, token.Type);
+            Assert.Equal("0x1", token.Value);
+            Assert.Equal(Lexer.LexerMode.Start, lexer.Mode);
+            Assert.Empty(lexer.Lexeme);
+        }
         #endregion
     }
 }

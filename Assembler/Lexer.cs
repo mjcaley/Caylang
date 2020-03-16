@@ -2,6 +2,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection.Metadata;
 using System.Text;
 using CayLang.Assembler;
@@ -261,6 +262,23 @@ namespace Caylang.Assembler
                 case '.':
                     Append();
                     Mode = LexerMode.IsFloat;
+                    break;
+                default:
+                    Mode = LexerMode.Start;
+                    return NewToken(TokenType.IntegerLiteral, Consume());
+            }
+
+            return null;
+        }
+
+        public Token? IsHexadecimal()
+        {
+            char[] HexChars = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
+
+            switch (Current)
+            {
+                case var _ when HexChars.Contains(Current):
+                    Append();
                     break;
                 default:
                     Mode = LexerMode.Start;
