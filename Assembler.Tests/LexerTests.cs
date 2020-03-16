@@ -231,6 +231,7 @@ namespace CayLang.Assembler.Tests
             Assert.NotNull(token);
             Assert.Equal(TokenType.Error, token.Type);
             Assert.Equal("*", token.Value);
+            Assert.Empty(lexer.Lexeme);
         }
         #endregion
 
@@ -324,6 +325,7 @@ namespace CayLang.Assembler.Tests
             Assert.Equal(TokenType.Integer, token.Type);
             Assert.Equal("1", token.Value);
             Assert.Equal(Lexer.LexerMode.Start, lexer.Mode);
+            Assert.Empty(lexer.Lexeme);
         }
 		#endregion
 	}
