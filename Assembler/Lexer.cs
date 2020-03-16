@@ -146,7 +146,7 @@ namespace Caylang.Assembler
             }
         }
 
-        public Token Start()
+        public Token? Start()
         {
             switch (Current)
             {
@@ -198,7 +198,7 @@ namespace Caylang.Assembler
             return null;
         }
 
-        public Token Negative()
+        public Token? Negative()
         {
             switch (Current)
             {
@@ -226,7 +226,7 @@ namespace Caylang.Assembler
             return null;
         }
 
-        public Token Digit()
+        public Token? Digit()
         {
             switch (Current)
             {
@@ -251,7 +251,7 @@ namespace Caylang.Assembler
             return null;
         }
 
-        public Token IsDecimal()
+        public Token? IsDecimal()
         {
             switch (Current)
             {
