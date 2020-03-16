@@ -205,7 +205,8 @@ namespace Caylang.Assembler
                     Mode = LexerMode.Decimal;
                     break;
                 default:
-                    return NewToken(TokenType.Error, Lexeme);
+                    Append();
+                    return NewToken(TokenType.Error, Consume());
             }
 
             return null;

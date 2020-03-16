@@ -273,6 +273,23 @@ namespace CayLang.Assembler.Tests
             Assert.Equal("-" + data, lexer.Lexeme);
             Assert.Equal(Lexer.LexerMode.Decimal, lexer.Mode);
         }
+
+        [Fact]
+        public void NegativeEmitsErrorToken()
+        {
+            const string input = "-a";
+            using var lexer = new Lexer(new StringReader(input))
+            {
+                Mode = Lexer.LexerMode.Negative
+            };
+            lexer.Append();
+            var token = lexer.Negative();
+
+            Assert.NotNull(token);
+            Assert.Equal(TokenType.Error, token.Type);
+            Assert.Equal(input, token.Value);
+            Assert.Empty(lexer.Lexeme);
+        }
         #endregion
 
         #region Digit rule
