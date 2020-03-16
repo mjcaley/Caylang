@@ -177,8 +177,8 @@ namespace Caylang.Assembler
                     Mode = LexerMode.Identifier;
                     break;
                 default:
-                    Advance();
-                    break;
+                    Append();
+                    return NewToken(TokenType.Error, Consume());
             }
 
             return null;

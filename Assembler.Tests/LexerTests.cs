@@ -211,7 +211,7 @@ namespace CayLang.Assembler.Tests
         }
 
         [Fact]
-        public void StartsDiscardsAndTransitions()
+        public void StartDiscardsAndTransitions()
         {
             using var lexer = new Lexer(new StringReader("\"1"));
             var token = lexer.Start();
@@ -220,6 +220,17 @@ namespace CayLang.Assembler.Tests
             Assert.Empty(lexer.Lexeme);
             Assert.Equal('1', lexer.Current);
             Assert.Equal(Lexer.LexerMode.String, lexer.Mode);
+        }
+
+        [Fact]
+        public void StartEmitsErrorToken()
+        {
+            using var lexer = new Lexer(new StringReader("*"));
+            var token = lexer.Start();
+
+            Assert.NotNull(token);
+            Assert.Equal(TokenType.Error, token.Type);
+            Assert.Equal("*", token.Value);
         }
         #endregion
 
