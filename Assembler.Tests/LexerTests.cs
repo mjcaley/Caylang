@@ -327,6 +327,67 @@ namespace CayLang.Assembler.Tests
             Assert.Equal(Lexer.LexerMode.Start, lexer.Mode);
             Assert.Empty(lexer.Lexeme);
         }
-		#endregion
-	}
+        #endregion
+
+        #region Decimal rule
+
+        [Theory]
+        [InlineData("0")]
+        [InlineData("1")]
+        [InlineData("2")]
+        [InlineData("3")]
+        [InlineData("4")]
+        [InlineData("5")]
+        [InlineData("6")]
+        [InlineData("7")]
+        [InlineData("8")]
+        [InlineData("9")]
+        public void DecimalAppendsDigit(string input)
+        {
+            using var lexer = new Lexer(new StringReader("1" + input))
+            {
+                Mode = Lexer.LexerMode.Decimal
+            };
+            lexer.Append();
+            var token = lexer.Decimal();
+
+            Assert.Null(token);
+            Assert.Equal("1" + input, lexer.Lexeme);
+            Assert.Equal(Lexer.LexerMode.Decimal, lexer.Mode);
+        }
+
+        [Fact]
+        public void DecimalAppendsDotAndTransitionsToFloat()
+        {
+            const string input = "0.";
+            using var lexer = new Lexer(new StringReader(input))
+            {
+                Mode = Lexer.LexerMode.Decimal
+            };
+            lexer.Append();
+            var token = lexer.Decimal();
+
+            Assert.Null(token);
+            Assert.Equal(input, lexer.Lexeme);
+            Assert.Equal(Lexer.LexerMode.Float, lexer.Mode);
+        }
+
+        [Fact]
+        public void DecimalEmitsIntegerTokenAndTransitionsToStart()
+        {
+            using var lexer = new Lexer(new StringReader("1 "))
+            {
+                Mode = Lexer.LexerMode.Decimal
+            };
+            lexer.Append();
+            var token = lexer.Decimal();
+
+            Assert.NotNull(token);
+            Assert.Equal(TokenType.Integer, token.Type);
+            Assert.Equal("1", token.Value);
+            Assert.Empty(lexer.Lexeme);
+            Assert.Equal(Lexer.LexerMode.Start, lexer.Mode);
+        }
+        #endregion
+    }
 }

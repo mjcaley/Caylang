@@ -237,6 +237,25 @@ namespace Caylang.Assembler
             return null;
         }
 
+        public Token Decimal()
+        {
+            switch (Current)
+            {
+                case var _ when char.IsDigit(Current):
+                    Append();
+                    break;
+                case '.':
+                    Append();
+                    Mode = LexerMode.Float;
+                    break;
+                default:
+                    Mode = LexerMode.Start;
+                    return NewToken(TokenType.Integer, Consume());
+            }
+
+            return null;
+        }
+
         public static List<Token> Lex(TextReader stream)
         {
             using var state = new Lexer(stream);
