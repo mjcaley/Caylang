@@ -51,9 +51,9 @@ namespace CayLang.Assembler
         u64Type,
 
         // Literals
-        Integer,
-        Float,
-        String,
+        IntegerLiteral,
+        FloatLiteral,
+        StringLiteral,
         Identifier,
 
         // Assembler tokens

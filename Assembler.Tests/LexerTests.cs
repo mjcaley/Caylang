@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.Contracts;
 using System.IO;
 using System.Text;
 using Caylang.Assembler;
@@ -162,6 +163,7 @@ namespace CayLang.Assembler.Tests
         [InlineData("\v")]
         public void StartTransitionsToSkipWhitespace(string input)
         {
+            Contract.Requires(input != null);
             using var lexer = new Lexer(new StringReader(input));
             var token = lexer.Start();
 
@@ -184,22 +186,22 @@ namespace CayLang.Assembler.Tests
         }
 
         [Theory]
-        [InlineData("-", Lexer.LexerMode.Negative)]
+        [InlineData("-", Lexer.LexerMode.IsNegative)]
         [InlineData("0", Lexer.LexerMode.Digit)]
-        [InlineData("1", Lexer.LexerMode.Decimal)]
-        [InlineData("2", Lexer.LexerMode.Decimal)]
-        [InlineData("3", Lexer.LexerMode.Decimal)]
-        [InlineData("4", Lexer.LexerMode.Decimal)]
-        [InlineData("5", Lexer.LexerMode.Decimal)]
-        [InlineData("6", Lexer.LexerMode.Decimal)]
-        [InlineData("7", Lexer.LexerMode.Decimal)]
-        [InlineData("8", Lexer.LexerMode.Decimal)]
-        [InlineData("9", Lexer.LexerMode.Decimal)]
-        [InlineData(".", Lexer.LexerMode.Keyword)]
-        [InlineData("_", Lexer.LexerMode.Identifier)]
-        [InlineData("a", Lexer.LexerMode.Identifier)]
-        [InlineData("b", Lexer.LexerMode.Identifier)]
-        [InlineData("c", Lexer.LexerMode.Identifier)]
+        [InlineData("1", Lexer.LexerMode.IsDecimal)]
+        [InlineData("2", Lexer.LexerMode.IsDecimal)]
+        [InlineData("3", Lexer.LexerMode.IsDecimal)]
+        [InlineData("4", Lexer.LexerMode.IsDecimal)]
+        [InlineData("5", Lexer.LexerMode.IsDecimal)]
+        [InlineData("6", Lexer.LexerMode.IsDecimal)]
+        [InlineData("7", Lexer.LexerMode.IsDecimal)]
+        [InlineData("8", Lexer.LexerMode.IsDecimal)]
+        [InlineData("9", Lexer.LexerMode.IsDecimal)]
+        [InlineData(".", Lexer.LexerMode.IsKeyword)]
+        [InlineData("_", Lexer.LexerMode.IsIdentifier)]
+        [InlineData("a", Lexer.LexerMode.IsIdentifier)]
+        [InlineData("b", Lexer.LexerMode.IsIdentifier)]
+        [InlineData("c", Lexer.LexerMode.IsIdentifier)]
         public void StartAppendsAndTransitions(string input, Lexer.LexerMode mode)
         {
             using var lexer = new Lexer(new StringReader(input));
@@ -219,7 +221,7 @@ namespace CayLang.Assembler.Tests
             Assert.Null(token);
             Assert.Empty(lexer.Lexeme);
             Assert.Equal('1', lexer.Current);
-            Assert.Equal(Lexer.LexerMode.String, lexer.Mode);
+            Assert.Equal(Lexer.LexerMode.IsString, lexer.Mode);
         }
 
         [Fact]
@@ -235,13 +237,13 @@ namespace CayLang.Assembler.Tests
         }
         #endregion
 
-        #region Negative rule
+        #region IsNegative rule
         [Fact]
         public void NegativeTransitionsToDigit()
         {
             using var lexer = new Lexer(new StringReader("-0"))
             {
-                Mode = Lexer.LexerMode.Negative
+                Mode = Lexer.LexerMode.IsNegative
             };
             lexer.Append();
             var token = lexer.Negative();
@@ -265,14 +267,14 @@ namespace CayLang.Assembler.Tests
         {
             using var lexer = new Lexer(new StringReader("-" + data))
             {
-                Mode = Lexer.LexerMode.Negative
+                Mode = Lexer.LexerMode.IsNegative
             };
             lexer.Append();
             var token = lexer.Negative();
 
             Assert.Null(token);
             Assert.Equal("-" + data, lexer.Lexeme);
-            Assert.Equal(Lexer.LexerMode.Decimal, lexer.Mode);
+            Assert.Equal(Lexer.LexerMode.IsDecimal, lexer.Mode);
         }
 
         [Fact]
@@ -281,7 +283,7 @@ namespace CayLang.Assembler.Tests
             const string input = "-a";
             using var lexer = new Lexer(new StringReader(input))
             {
-                Mode = Lexer.LexerMode.Negative
+                Mode = Lexer.LexerMode.IsNegative
             };
             lexer.Append();
             var token = lexer.Negative();
@@ -295,9 +297,9 @@ namespace CayLang.Assembler.Tests
 
         #region Digit rule
         [Theory]
-        [InlineData("x", Lexer.LexerMode.Hexadecimal)]
-        [InlineData("b", Lexer.LexerMode.Binary)]
-        [InlineData(".", Lexer.LexerMode.Float)]
+        [InlineData("x", Lexer.LexerMode.IsHexadecimal)]
+        [InlineData("b", Lexer.LexerMode.IsBinary)]
+        [InlineData(".", Lexer.LexerMode.IsFloat)]
         public void DigitAppendAndTransition(string data, Lexer.LexerMode mode)
         {
             var input = "0" + data;
@@ -322,14 +324,14 @@ namespace CayLang.Assembler.Tests
             };
             var token = lexer.Digit();
 
-            Assert.Equal(TokenType.Integer, token.Type);
+            Assert.Equal(TokenType.IntegerLiteral, token.Type);
             Assert.Equal("1", token.Value);
             Assert.Equal(Lexer.LexerMode.Start, lexer.Mode);
             Assert.Empty(lexer.Lexeme);
         }
         #endregion
 
-        #region Decimal rule
+        #region IsDecimal rule
 
         [Theory]
         [InlineData("0")]
@@ -346,14 +348,14 @@ namespace CayLang.Assembler.Tests
         {
             using var lexer = new Lexer(new StringReader("1" + input))
             {
-                Mode = Lexer.LexerMode.Decimal
+                Mode = Lexer.LexerMode.IsDecimal
             };
             lexer.Append();
-            var token = lexer.Decimal();
+            var token = lexer.IsDecimal();
 
             Assert.Null(token);
             Assert.Equal("1" + input, lexer.Lexeme);
-            Assert.Equal(Lexer.LexerMode.Decimal, lexer.Mode);
+            Assert.Equal(Lexer.LexerMode.IsDecimal, lexer.Mode);
         }
 
         [Fact]
@@ -362,14 +364,14 @@ namespace CayLang.Assembler.Tests
             const string input = "0.";
             using var lexer = new Lexer(new StringReader(input))
             {
-                Mode = Lexer.LexerMode.Decimal
+                Mode = Lexer.LexerMode.IsDecimal
             };
             lexer.Append();
-            var token = lexer.Decimal();
+            var token = lexer.IsDecimal();
 
             Assert.Null(token);
             Assert.Equal(input, lexer.Lexeme);
-            Assert.Equal(Lexer.LexerMode.Float, lexer.Mode);
+            Assert.Equal(Lexer.LexerMode.IsFloat, lexer.Mode);
         }
 
         [Fact]
@@ -377,17 +379,21 @@ namespace CayLang.Assembler.Tests
         {
             using var lexer = new Lexer(new StringReader("1 "))
             {
-                Mode = Lexer.LexerMode.Decimal
+                Mode = Lexer.LexerMode.IsDecimal
             };
             lexer.Append();
-            var token = lexer.Decimal();
+            var token = lexer.IsDecimal();
 
             Assert.NotNull(token);
-            Assert.Equal(TokenType.Integer, token.Type);
+            Assert.Equal(TokenType.IntegerLiteral, token.Type);
             Assert.Equal("1", token.Value);
             Assert.Empty(lexer.Lexeme);
             Assert.Equal(Lexer.LexerMode.Start, lexer.Mode);
         }
+        #endregion
+
+        #region IsHexadecimal rule
+
         #endregion
     }
 }

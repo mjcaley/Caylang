@@ -8,9 +8,23 @@ using CayLang.Assembler;
 
 namespace Caylang.Assembler
 {
-    public class LexerException : Exception { }
+    public class LexerException : Exception
+    {
+        public LexerException() { }
 
-    public class LexerDataException : LexerException { }
+        public LexerException(string message) : base(message) { }
+
+        public LexerException(string message, Exception innerException) : base(message, innerException) { }
+    }
+
+    public class LexerDataException : LexerException
+    {
+        public LexerDataException() { }
+
+        public LexerDataException(string message) : base(message) { }
+
+        public LexerDataException(string message, Exception inner): base(message, inner) { }
+    }
 
     public class Lexer : IDisposable
     {
@@ -24,15 +38,15 @@ namespace Caylang.Assembler
         {
             Start,
             SkipWhitespace,
-            Negative,
+            IsNegative,
             Digit,
-            Decimal,
-            Binary,
-            Hexadecimal,
-            Float,
-            String,
-            Keyword,
-            Identifier,
+            IsDecimal,
+            IsBinary,
+            IsHexadecimal,
+            IsFloat,
+            IsString,
+            IsKeyword,
+            IsIdentifier,
             End
         }
 
@@ -145,7 +159,7 @@ namespace Caylang.Assembler
                     return NewToken(TokenType.Colon);
                 case '-':
                     Append();
-                    Mode = LexerMode.Negative;
+                    Mode = LexerMode.IsNegative;
                     break;
                 case '0':
                     Append();
@@ -161,20 +175,20 @@ namespace Caylang.Assembler
                 case '8':
                 case '9':
                     Append();
-                    Mode = LexerMode.Decimal;
+                    Mode = LexerMode.IsDecimal;
                     break;
                 case '.':
                     Append();
-                    Mode = LexerMode.Keyword;
+                    Mode = LexerMode.IsKeyword;
                     break;
                 case '"':
                     Advance();
-                    Mode = LexerMode.String;
+                    Mode = LexerMode.IsString;
                     break;
                 case '_':
                 case char _ when char.IsLetter(Current):
                     Append();
-                    Mode = LexerMode.Identifier;
+                    Mode = LexerMode.IsIdentifier;
                     break;
                 default:
                     Append();
@@ -202,7 +216,7 @@ namespace Caylang.Assembler
                 case '8':
                 case '9':
                     Append();
-                    Mode = LexerMode.Decimal;
+                    Mode = LexerMode.IsDecimal;
                     break;
                 default:
                     Append();
@@ -218,26 +232,26 @@ namespace Caylang.Assembler
             {
                 case 'x':
                     Append();
-                    Mode = LexerMode.Hexadecimal;
+                    Mode = LexerMode.IsHexadecimal;
                     break;
                 case 'b':
                     Append();
-                    Mode = LexerMode.Binary;
+                    Mode = LexerMode.IsBinary;
                     break;
                 case '.':
                     Append();
-                    Mode = LexerMode.Float;
+                    Mode = LexerMode.IsFloat;
                     break;
                 default:
                     Append();
                     Mode = LexerMode.Start;
-                    return NewToken(TokenType.Integer, Consume());
+                    return NewToken(TokenType.IntegerLiteral, Consume());
             }
 
             return null;
         }
 
-        public Token Decimal()
+        public Token IsDecimal()
         {
             switch (Current)
             {
@@ -246,11 +260,11 @@ namespace Caylang.Assembler
                     break;
                 case '.':
                     Append();
-                    Mode = LexerMode.Float;
+                    Mode = LexerMode.IsFloat;
                     break;
                 default:
                     Mode = LexerMode.Start;
-                    return NewToken(TokenType.Integer, Consume());
+                    return NewToken(TokenType.IntegerLiteral, Consume());
             }
 
             return null;
