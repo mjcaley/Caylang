@@ -621,6 +621,22 @@ namespace CayLang.Assembler.Tests
             Assert.Equal(expected, lexer.Lexeme);
             Assert.Equal(Lexer.LexerMode.IsString, lexer.Mode);
         }
+
+        [Fact]
+        public void IsStringInvalidEscapeCharacterEmitsErrorToken()
+        {
+            using var lexer = new Lexer(new StringReader("\"\\q"))
+            {
+                Mode = Lexer.LexerMode.IsString
+            };
+            lexer.Advance();
+            var token = lexer.IsString();
+
+            Assert.NotNull(token);
+            Assert.Equal(TokenType.Error, token?.Type);
+            Assert.Empty(lexer.Lexeme);
+            Assert.Equal(Lexer.LexerMode.Start, lexer.Mode);
+        }
         #endregion
     }
 }
