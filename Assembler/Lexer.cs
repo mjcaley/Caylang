@@ -325,6 +325,67 @@ namespace Caylang.Assembler
             return null;
         }
 
+        public Token? IsString()
+        {
+            switch (Current)
+            {
+                case '\\':
+                    Advance();
+                    switch (Current)
+                    {
+                        case 'a':
+                            Advance();
+                            Lexeme += '\a';
+                            break;
+                        case 'b':
+                            Advance();
+                            Lexeme += '\b';
+                            break;
+                        case 'f':
+                            Advance();
+                            Lexeme += '\f';
+                            break;
+                        case 'n':
+                            Advance();
+                            Lexeme += '\n';
+                            break;
+                        case 'r':
+                            Advance();
+                            Lexeme += '\r';
+                            break;
+                        case 't':
+                            Advance();
+                            Lexeme += '\t';
+                            break;
+                        case 'v':
+                            Advance();
+                            Lexeme += '\v';
+                            break;
+                        case '"':
+                            Advance();
+                            Lexeme += '"';
+                            break;
+                        default:
+                            Mode = LexerMode.Start;
+                            return NewToken(TokenType.Error, Consume());
+                    }
+
+                    break;
+                case '"':
+                    Advance();
+                    Mode = LexerMode.Start;
+                    return NewToken(TokenType.StringLiteral, Consume());
+                case '\n':
+                    Mode = LexerMode.Start;
+                    return NewToken(TokenType.Error, Consume());
+                default:
+                    Append();
+                    break;
+            }
+
+            return null;
+        }
+
         public static List<Token> Lex(TextReader stream)
         {
             using var state = new Lexer(stream);

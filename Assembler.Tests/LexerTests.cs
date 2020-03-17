@@ -531,5 +531,96 @@ namespace CayLang.Assembler.Tests
             Assert.Equal(Lexer.LexerMode.Start, lexer.Mode);
         }
         #endregion
+
+        #region IsString rule
+        [Fact]
+        public void IsStringAppendsToLexeme()
+        {
+            using var lexer = new Lexer(new StringReader("\"a\""))
+            {
+                Mode = Lexer.LexerMode.IsString
+            };
+            lexer.Advance();
+            var token = lexer.IsString();
+
+            Assert.Null(token);
+            Assert.Equal("a", lexer.Lexeme);
+            Assert.Equal(Lexer.LexerMode.IsString, lexer.Mode);
+        }
+
+        [Fact]
+        public void IsStringEmitsStringTokenOnDoubleQuote()
+        {
+            using var lexer = new Lexer(new StringReader("\"a\""))
+            {
+                Mode = Lexer.LexerMode.IsString
+            };
+            lexer.Advance();
+            lexer.Append();
+            var token = lexer.IsString();
+
+            Assert.NotNull(token);
+            Assert.Equal(TokenType.StringLiteral, token?.Type);
+            Assert.Equal("a", token?.Value);
+            Assert.Empty(lexer.Lexeme);
+            Assert.Equal(Lexer.LexerMode.Start, lexer.Mode);
+        }
+
+        [Fact]
+        public void IsStringEmitsStringTokenOnEmptyString()
+        {
+            using var lexer = new Lexer(new StringReader("\"\""))
+            {
+                Mode = Lexer.LexerMode.IsString
+            };
+            lexer.Advance();
+            var token = lexer.IsString();
+
+            Assert.NotNull(token);
+            Assert.Equal(TokenType.StringLiteral, token?.Type);
+            Assert.Equal("", token?.Value);
+            Assert.Empty(lexer.Lexeme);
+            Assert.Equal(Lexer.LexerMode.Start, lexer.Mode);
+        }
+
+        [Fact]
+        public void IsStringEmitsErrorTokenOnNewline()
+        {
+            using var lexer = new Lexer(new StringReader("\"\n"))
+            {
+                Mode = Lexer.LexerMode.IsString
+            };
+            lexer.Advance();
+            var token = lexer.IsString();
+
+            Assert.NotNull(token);
+            Assert.Equal(TokenType.Error, token?.Type);
+            Assert.Empty(lexer.Lexeme);
+            Assert.Equal(Lexer.LexerMode.Start, lexer.Mode);
+        }
+
+        [Theory]
+        [InlineData("a", "\a")]
+        [InlineData("b", "\b")]
+        [InlineData("f", "\f")]
+        [InlineData("n", "\n")]
+        [InlineData("r", "\r")]
+        [InlineData("t", "\t")]
+        [InlineData("v", "\v")]
+        [InlineData("\"", "\"")]
+        public void IsStringEscapeCharactersProduceControlCharacters(string escape, string expected)
+        {
+            using var lexer = new Lexer(new StringReader("\"\\" + escape))
+            {
+                Mode = Lexer.LexerMode.IsString
+            };
+            lexer.Advance();
+            var token = lexer.IsString();
+
+            Assert.Null(token);
+            Assert.Equal(expected, lexer.Lexeme);
+            Assert.Equal(Lexer.LexerMode.IsString, lexer.Mode);
+        }
+        #endregion
     }
 }
