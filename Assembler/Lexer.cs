@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Reflection.Metadata;
@@ -50,6 +51,13 @@ namespace Caylang.Assembler
             IsIdentifier,
             End
         }
+
+        private static readonly ReadOnlyCollection<char> HexChars = new List<char>
+        {
+            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+            'a', 'b', 'c', 'd', 'e', 'f',
+            'A', 'B', 'C', 'D', 'E', 'F'
+        }.AsReadOnly();
 
         public LexerMode Mode { get; set; } = LexerMode.Start;
 
@@ -273,8 +281,6 @@ namespace Caylang.Assembler
 
         public Token? IsHexadecimal()
         {
-            char[] HexChars = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
-
             switch (Current)
             {
                 case var _ when HexChars.Contains(Current):
