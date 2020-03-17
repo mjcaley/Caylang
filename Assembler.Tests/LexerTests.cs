@@ -485,5 +485,52 @@ namespace CayLang.Assembler.Tests
             Assert.Equal(Lexer.LexerMode.Start, lexer.Mode);
         }
         #endregion
+
+        #region IsFloat rule
+        [Theory]
+        [InlineData('0')]
+        [InlineData('1')]
+        [InlineData('2')]
+        [InlineData('3')]
+        [InlineData('4')]
+        [InlineData('5')]
+        [InlineData('6')]
+        [InlineData('7')]
+        [InlineData('8')]
+        [InlineData('9')]
+        public void IsFloatAppendsToLexeme(char data)
+        {
+            using var lexer = new Lexer(new StringReader("0." + data))
+            {
+                Mode = Lexer.LexerMode.IsFloat
+            };
+            lexer.Append();
+            lexer.Append();
+            var token = lexer.IsFloat();
+
+            Assert.Null(token);
+            Assert.Equal("0." + data, lexer.Lexeme);
+            Assert.Equal(Lexer.LexerMode.IsFloat, lexer.Mode);
+        }
+
+        [Fact]
+        public void IsFloatEmitsFloatTokenWhenNoMatch()
+        {
+            using var lexer = new Lexer(new StringReader("0.0 "))
+            {
+                Mode = Lexer.LexerMode.IsFloat
+            };
+            lexer.Append();
+            lexer.Append();
+            lexer.Append();
+            var token = lexer.IsFloat();
+
+            Assert.NotNull(token);
+            Assert.Equal(TokenType.FloatLiteral, token?.Type);
+            Assert.Equal("0.0", token?.Value);
+            Assert.Empty(lexer.Lexeme);
+            Assert.Equal(Lexer.LexerMode.Start, lexer.Mode);
+        }
+        #endregion
     }
 }

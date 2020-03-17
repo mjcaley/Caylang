@@ -310,6 +310,21 @@ namespace Caylang.Assembler
             return null;
         }
 
+        public Token? IsFloat()
+        {
+            switch (Current)
+            {
+                case var _ when char.IsDigit(Current):
+                    Append();
+                    break;
+                default:
+                    Mode = LexerMode.Start;
+                    return NewToken(TokenType.FloatLiteral, Consume());
+            }
+
+            return null;
+        }
+
         public static List<Token> Lex(TextReader stream)
         {
             using var state = new Lexer(stream);
