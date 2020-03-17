@@ -445,5 +445,45 @@ namespace CayLang.Assembler.Tests
             Assert.Empty(lexer.Lexeme);
         }
         #endregion
+
+        #region IsBinary rule
+
+        [Theory]
+        [InlineData('0')]
+        [InlineData('1')]
+        public void IsBinaryAppendsToLexeme(char data)
+        {
+            using var lexer = new Lexer(new StringReader("0b" + data))
+            {
+                Mode = Lexer.LexerMode.IsBinary
+            };
+            lexer.Append();
+            lexer.Append();
+            var token = lexer.IsBinary();
+
+            Assert.Null(token);
+            Assert.Equal("0b" + data, lexer.Lexeme);
+            Assert.Equal(Lexer.LexerMode.IsBinary, lexer.Mode);
+        }
+
+        [Fact]
+        public void IsBinaryEmitsIntegerTokenWhenNoMatch()
+        {
+            using var lexer = new Lexer(new StringReader("0b1 "))
+            {
+                Mode = Lexer.LexerMode.IsBinary
+            };
+            lexer.Append();
+            lexer.Append();
+            lexer.Append();
+            var token = lexer.IsBinary();
+
+            Assert.NotNull(token);
+            Assert.Equal(TokenType.IntegerLiteral, token?.Type);
+            Assert.Equal("0b1", token?.Value);
+            Assert.Empty(lexer.Lexeme);
+            Assert.Equal(Lexer.LexerMode.Start, lexer.Mode);
+        }
+        #endregion
     }
 }

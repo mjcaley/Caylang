@@ -294,6 +294,22 @@ namespace Caylang.Assembler
             return null;
         }
 
+        public Token? IsBinary()
+        {
+            switch (Current)
+            {
+                case '0':
+                case '1':
+                    Append();
+                    break;
+                default:
+                    Mode = LexerMode.Start;
+                    return NewToken(TokenType.IntegerLiteral, Consume());
+            }
+
+            return null;
+        }
+
         public static List<Token> Lex(TextReader stream)
         {
             using var state = new Lexer(stream);
