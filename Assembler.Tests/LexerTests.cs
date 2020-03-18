@@ -638,5 +638,65 @@ namespace CayLang.Assembler.Tests
             Assert.Equal(Lexer.LexerMode.Start, lexer.Mode);
         }
         #endregion
+
+        #region IsKeyword rule
+
+        [Fact]
+        public void IsKeywordAppendsToLexeme()
+        {
+            using var lexer = new Lexer(new StringReader(".f"))
+            {
+                Mode = Lexer.LexerMode.IsKeyword
+            };
+            lexer.Append();
+            var token = lexer.IsKeyword();
+
+            Assert.Null(token);
+            Assert.Equal(".f", lexer.Lexeme);
+            Assert.Equal(Lexer.LexerMode.IsKeyword, lexer.Mode);
+        }
+
+        [Fact]
+        public void IsKeywordEmitsFuncTokenAndTransitionsToStart()
+        {
+            using var lexer = new Lexer(new StringReader(".func "))
+            {
+                Mode = Lexer.LexerMode.IsKeyword
+            };
+            lexer.Append();
+            lexer.Append();
+            lexer.Append();
+            lexer.Append();
+            lexer.Append();
+            var token = lexer.IsKeyword();
+
+            Assert.NotNull(token);
+            Assert.Equal(TokenType.Func, token?.Type);
+            Assert.Empty(lexer.Lexeme);
+            Assert.Equal(Lexer.LexerMode.Start, lexer.Mode);
+        }
+
+        [Fact]
+        public void IsKeywordEmitsDefineTokenAndTransitionsToStart()
+        {
+            using var lexer = new Lexer(new StringReader(".define "))
+            {
+                Mode = Lexer.LexerMode.IsKeyword
+            };
+            lexer.Append();
+            lexer.Append();
+            lexer.Append();
+            lexer.Append();
+            lexer.Append();
+            lexer.Append();
+            lexer.Append();
+            var token = lexer.IsKeyword();
+
+            Assert.NotNull(token);
+            Assert.Equal(TokenType.Define, token?.Type);
+            Assert.Empty(lexer.Lexeme);
+            Assert.Equal(Lexer.LexerMode.Start, lexer.Mode);
+        }
+        #endregion
     }
 }

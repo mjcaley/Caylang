@@ -386,6 +386,27 @@ namespace Caylang.Assembler
             return null;
         }
 
+        public Token? IsKeyword()
+        {
+            switch (Current)
+            {
+                case var _ when char.IsLetterOrDigit(Current):
+                    Append();
+                    break;
+                default:
+                    Mode = LexerMode.Start;
+                    var value = Consume();
+                    return value switch
+                    {
+                        ".func" => NewToken(TokenType.Func),
+                        ".define" => NewToken(TokenType.Define),
+                        _ => NewToken(TokenType.Error, value)
+                    };
+            }
+
+            return null;
+        }
+
         public static List<Token> Lex(TextReader stream)
         {
             using var state = new Lexer(stream);
