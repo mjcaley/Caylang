@@ -3,6 +3,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <LangVersion>8.0</LangVersion>
+    <Nullable>enable</Nullable>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <RootNamespace>Caylang.Assembler</RootNamespace>
   </PropertyGroup>
