@@ -706,8 +706,8 @@ namespace CayLang.Assembler.Tests
             var token = lexer.IsWord();
 
             Assert.NotNull(token);
-            Assert.Equal(TokenType.Identifier, token.Type);
-            Assert.Equal("a", token.Value);
+            Assert.Equal(TokenType.Identifier, token?.Type);
+            Assert.Equal("a", token?.Value);
             Assert.Empty(lexer.Lexeme);
             Assert.Equal(' ', lexer.Current);
             Assert.Equal(Lexer.LexerMode.Start, lexer.Mode);

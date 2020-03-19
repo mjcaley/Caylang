@@ -10,6 +10,14 @@ using CayLang.Assembler;
 
 namespace Caylang.Assembler
 {
+    public static class SafeAddTo
+    {
+        public static void AddTo(this Token token, List<Token> list)
+        {
+            list?.Add(token);
+        }
+    }
+
     public class LexerException : Exception
     {
         public LexerException() { }
@@ -122,18 +130,6 @@ namespace Caylang.Assembler
             Lexeme = "";
 
             return lexeme;
-        }
-
-        public static List<Token> LexString(string data)
-        {
-            var stream = new StringReader(data);
-            return Lex(stream);
-        }
-
-        public static List<Token> LexFile(string filename)
-        {
-            var stream = File.OpenText(filename);
-            return Lex(stream);
         }
 
         private Token CreateToken(TokenType type, string value = "")
@@ -456,9 +452,16 @@ namespace Caylang.Assembler
             return null;
         }
 
-        public Token? IsIdentifier()
+        public static List<Token> LexString(string data)
         {
-            return null;
+            var stream = new StringReader(data);
+            return Lex(stream);
+        }
+
+        public static List<Token> LexFile(string filename)
+        {
+            var stream = File.OpenText(filename);
+            return Lex(stream);
         }
 
         public static List<Token> Lex(TextReader stream)
@@ -470,19 +473,43 @@ namespace Caylang.Assembler
             {
                 switch (state.Mode)
                 {
-                    case LexerMode.Start:
-                        var token = state.Start();
-                        if (token != null)
-                        {
-                            tokens.Add(token);
-                        }
-
-                        break;
                     case LexerMode.SkipWhitespace:
                         state.SkipWhitespace();
                         break;
-                    case LexerMode.End:
+                    case LexerMode.Start:
+                        state.Start()?.AddTo(tokens);
                         break;
+                    case LexerMode.IsNegative:
+                        state.Negative()?.AddTo(tokens);
+                        break;
+                    case LexerMode.Digit:
+                        state.Digit()?.AddTo(tokens);
+                        break;
+                    case LexerMode.IsDecimal:
+                        state.IsDecimal()?.AddTo(tokens);
+                        break;
+                    case LexerMode.IsBinary:
+                        state.IsBinary()?.AddTo(tokens);
+                        break;
+                    case LexerMode.IsHexadecimal:
+                        state.IsHexadecimal()?.AddTo(tokens);
+                        break;
+                    case LexerMode.IsFloat:
+                        state.IsFloat()?.AddTo(tokens);
+                        break;
+                    case LexerMode.IsString:
+                        state.IsString()?.AddTo(tokens);
+                        break;
+                    case LexerMode.IsWord:
+                        state.IsWord()?.AddTo(tokens);
+                        break;
+                    default:
+                        break;
+                }
+
+                if (state.Mode == LexerMode.End)
+                {
+                    break;
                 }
             }
 
