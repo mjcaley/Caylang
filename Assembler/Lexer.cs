@@ -47,8 +47,7 @@ namespace Caylang.Assembler
             IsHexadecimal,
             IsFloat,
             IsString,
-            IsKeyword,
-            IsIdentifier,
+            IsWord,
             End
         }
 
@@ -137,16 +136,29 @@ namespace Caylang.Assembler
             return Lex(stream);
         }
 
-        private Token NewToken(TokenType type, string value = "")
+        private Token CreateToken(TokenType type, string value = "")
         {
             return new Token(type, value, Line);
+        }
+
+        private Token TransitionAndCreateToken(LexerMode mode, TokenType type, string value = "")
+        {
+            Mode = mode;
+            return CreateToken(type, value);
+        }
+
+        private Token? Transition(LexerMode mode)
+        {
+            Mode = mode;
+
+            return null;
         }
 
         public void SkipWhitespace()
         {
             switch (Current)
             {
-                case char _ when char.IsWhiteSpace(Current):
+                case var _ when char.IsWhiteSpace(Current):
                     Advance();
                     break;
                 default:
@@ -159,13 +171,13 @@ namespace Caylang.Assembler
         {
             switch (Current)
             {
-                case char _ when char.IsWhiteSpace(Current):
+                case var _ when char.IsWhiteSpace(Current):
                     Mode = LexerMode.SkipWhitespace;
                     break;
                 case '=':
-                    return NewToken(TokenType.Equal);
+                    return CreateToken(TokenType.Equal);
                 case ':':
-                    return NewToken(TokenType.Colon);
+                    return CreateToken(TokenType.Colon);
                 case '-':
                     Append();
                     Mode = LexerMode.IsNegative;
@@ -188,20 +200,20 @@ namespace Caylang.Assembler
                     break;
                 case '.':
                     Append();
-                    Mode = LexerMode.IsKeyword;
+                    Mode = LexerMode.IsWord;
                     break;
                 case '"':
                     Advance();
                     Mode = LexerMode.IsString;
                     break;
                 case '_':
-                case char _ when char.IsLetter(Current):
+                case var _ when char.IsLetter(Current):
                     Append();
-                    Mode = LexerMode.IsIdentifier;
+                    Mode = LexerMode.IsWord;
                     break;
                 default:
                     Append();
-                    return NewToken(TokenType.Error, Consume());
+                    return CreateToken(TokenType.Error, Consume());
             }
 
             return null;
@@ -229,7 +241,7 @@ namespace Caylang.Assembler
                     break;
                 default:
                     Append();
-                    return NewToken(TokenType.Error, Consume());
+                    return CreateToken(TokenType.Error, Consume());
             }
 
             return null;
@@ -254,7 +266,7 @@ namespace Caylang.Assembler
                 default:
                     Append();
                     Mode = LexerMode.Start;
-                    return NewToken(TokenType.IntegerLiteral, Consume());
+                    return CreateToken(TokenType.IntegerLiteral, Consume());
             }
 
             return null;
@@ -273,7 +285,7 @@ namespace Caylang.Assembler
                     break;
                 default:
                     Mode = LexerMode.Start;
-                    return NewToken(TokenType.IntegerLiteral, Consume());
+                    return CreateToken(TokenType.IntegerLiteral, Consume());
             }
 
             return null;
@@ -288,7 +300,7 @@ namespace Caylang.Assembler
                     break;
                 default:
                     Mode = LexerMode.Start;
-                    return NewToken(TokenType.IntegerLiteral, Consume());
+                    return CreateToken(TokenType.IntegerLiteral, Consume());
             }
 
             return null;
@@ -304,7 +316,7 @@ namespace Caylang.Assembler
                     break;
                 default:
                     Mode = LexerMode.Start;
-                    return NewToken(TokenType.IntegerLiteral, Consume());
+                    return CreateToken(TokenType.IntegerLiteral, Consume());
             }
 
             return null;
@@ -319,7 +331,7 @@ namespace Caylang.Assembler
                     break;
                 default:
                     Mode = LexerMode.Start;
-                    return NewToken(TokenType.FloatLiteral, Consume());
+                    return CreateToken(TokenType.FloatLiteral, Consume());
             }
 
             return null;
@@ -367,17 +379,17 @@ namespace Caylang.Assembler
                             break;
                         default:
                             Mode = LexerMode.Start;
-                            return NewToken(TokenType.Error, Consume());
+                            return CreateToken(TokenType.Error, Consume());
                     }
 
                     break;
                 case '"':
                     Advance();
                     Mode = LexerMode.Start;
-                    return NewToken(TokenType.StringLiteral, Consume());
+                    return CreateToken(TokenType.StringLiteral, Consume());
                 case '\n':
                     Mode = LexerMode.Start;
-                    return NewToken(TokenType.Error, Consume());
+                    return CreateToken(TokenType.Error, Consume());
                 default:
                     Append();
                     break;
@@ -386,7 +398,7 @@ namespace Caylang.Assembler
             return null;
         }
 
-        public Token? IsKeyword()
+        public Token? IsWord()
         {
             switch (Current)
             {
@@ -394,16 +406,58 @@ namespace Caylang.Assembler
                     Append();
                     break;
                 default:
-                    Mode = LexerMode.Start;
                     var value = Consume();
                     return value switch
                     {
-                        ".func" => NewToken(TokenType.Func),
-                        ".define" => NewToken(TokenType.Define),
-                        _ => NewToken(TokenType.Error, value)
+                        "func" => TransitionAndCreateToken(LexerMode.Start, TokenType.Func),
+                        "define" => TransitionAndCreateToken(LexerMode.Start, TokenType.Define),
+                        "args" => TransitionAndCreateToken(LexerMode.Start, TokenType.Param, value),
+                        "locals" => TransitionAndCreateToken(LexerMode.Start, TokenType.Param, value),
+                        "halt" => TransitionAndCreateToken(LexerMode.Start, TokenType.Halt),
+                        "nop" => TransitionAndCreateToken(LexerMode.Start, TokenType.Noop),
+                        "add" => TransitionAndCreateToken(LexerMode.Start, TokenType.Add),
+                        "sub" => TransitionAndCreateToken(LexerMode.Start, TokenType.Subtract),
+                        "mul" => TransitionAndCreateToken(LexerMode.Start, TokenType.Multiply),
+                        "div" => TransitionAndCreateToken(LexerMode.Start, TokenType.Divide),
+                        "mod" => TransitionAndCreateToken(LexerMode.Start, TokenType.Modulo),
+                        "ldconst" => TransitionAndCreateToken(LexerMode.Start, TokenType.LoadConst),
+                        "ldlocal" => TransitionAndCreateToken(LexerMode.Start, TokenType.LoadLocal),
+                        "stconst" => TransitionAndCreateToken(LexerMode.Start, TokenType.StoreLocal),
+                        "pop" => TransitionAndCreateToken(LexerMode.Start, TokenType.Pop),
+                        "testeq" => TransitionAndCreateToken(LexerMode.Start, TokenType.TestEqual),
+                        "testne" => TransitionAndCreateToken(LexerMode.Start, TokenType.TestNotEqual),
+                        "testgt" => TransitionAndCreateToken(LexerMode.Start, TokenType.TestGreaterThan),
+                        "testlt" => TransitionAndCreateToken(LexerMode.Start, TokenType.TestLessThan),
+                        "jmp" => TransitionAndCreateToken(LexerMode.Start, TokenType.Jump),
+                        "jmpt" => TransitionAndCreateToken(LexerMode.Start, TokenType.JumpTrue),
+                        "jmpf" => TransitionAndCreateToken(LexerMode.Start, TokenType.JumpFalse),
+                        "callfunc" => TransitionAndCreateToken(LexerMode.Start, TokenType.CallFunc),
+                        "callinterface" => TransitionAndCreateToken(LexerMode.Start, TokenType.CallInterface),
+                        "ret" => TransitionAndCreateToken(LexerMode.Start, TokenType.Return),
+                        "newstruct" => TransitionAndCreateToken(LexerMode.Start, TokenType.NewStruct),
+                        "ldfield" => TransitionAndCreateToken(LexerMode.Start, TokenType.LoadField),
+                        "stfield" => TransitionAndCreateToken(LexerMode.Start, TokenType.StoreField),
+                        "addr" => TransitionAndCreateToken(LexerMode.Start, TokenType.AddressType),
+                        "i8" => TransitionAndCreateToken(LexerMode.Start, TokenType.i8Type),
+                        "u8" => TransitionAndCreateToken(LexerMode.Start, TokenType.u8Type),
+                        "i16" => TransitionAndCreateToken(LexerMode.Start, TokenType.i16Type),
+                        "u16" => TransitionAndCreateToken(LexerMode.Start, TokenType.u16Type),
+                        "i32" => TransitionAndCreateToken(LexerMode.Start, TokenType.i32Type),
+                        "u32" => TransitionAndCreateToken(LexerMode.Start, TokenType.u32Type),
+                        "i64" => TransitionAndCreateToken(LexerMode.Start, TokenType.i64Type),
+                        "u64" => TransitionAndCreateToken(LexerMode.Start, TokenType.u64Type),
+                        "f32" => TransitionAndCreateToken(LexerMode.Start, TokenType.f32Type),
+                        "f64" => TransitionAndCreateToken(LexerMode.Start, TokenType.f64Type),
+                        "str" => TransitionAndCreateToken(LexerMode.Start, TokenType.StringType),
+                        _ => TransitionAndCreateToken(LexerMode.Start, TokenType.Identifier, value)
                     };
             }
 
+            return null;
+        }
+
+        public Token? IsIdentifier()
+        {
             return null;
         }
 

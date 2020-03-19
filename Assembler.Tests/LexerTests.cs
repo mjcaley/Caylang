@@ -196,11 +196,10 @@ namespace CayLang.Assembler.Tests
         [InlineData("7", Lexer.LexerMode.IsDecimal)]
         [InlineData("8", Lexer.LexerMode.IsDecimal)]
         [InlineData("9", Lexer.LexerMode.IsDecimal)]
-        [InlineData(".", Lexer.LexerMode.IsKeyword)]
-        [InlineData("_", Lexer.LexerMode.IsIdentifier)]
-        [InlineData("a", Lexer.LexerMode.IsIdentifier)]
-        [InlineData("b", Lexer.LexerMode.IsIdentifier)]
-        [InlineData("c", Lexer.LexerMode.IsIdentifier)]
+        [InlineData("_", Lexer.LexerMode.IsWord)]
+        [InlineData("a", Lexer.LexerMode.IsWord)]
+        [InlineData("b", Lexer.LexerMode.IsWord)]
+        [InlineData("c", Lexer.LexerMode.IsWord)]
         public void StartAppendsAndTransitions(string input, Lexer.LexerMode mode)
         {
             using var lexer = new Lexer(new StringReader(input));
@@ -639,36 +638,35 @@ namespace CayLang.Assembler.Tests
         }
         #endregion
 
-        #region IsKeyword rule
+        #region IsWord rule
 
         [Fact]
-        public void IsKeywordAppendsToLexeme()
+        public void IsWordAppendsToLexeme()
         {
             using var lexer = new Lexer(new StringReader(".f"))
             {
-                Mode = Lexer.LexerMode.IsKeyword
+                Mode = Lexer.LexerMode.IsWord
             };
             lexer.Append();
-            var token = lexer.IsKeyword();
+            var token = lexer.IsWord();
 
             Assert.Null(token);
             Assert.Equal(".f", lexer.Lexeme);
-            Assert.Equal(Lexer.LexerMode.IsKeyword, lexer.Mode);
+            Assert.Equal(Lexer.LexerMode.IsWord, lexer.Mode);
         }
 
         [Fact]
-        public void IsKeywordEmitsFuncTokenAndTransitionsToStart()
+        public void IsWordEmitsFuncTokenAndTransitionsToStart()
         {
-            using var lexer = new Lexer(new StringReader(".func "))
+            using var lexer = new Lexer(new StringReader("func "))
             {
-                Mode = Lexer.LexerMode.IsKeyword
+                Mode = Lexer.LexerMode.IsWord
             };
             lexer.Append();
             lexer.Append();
             lexer.Append();
             lexer.Append();
-            lexer.Append();
-            var token = lexer.IsKeyword();
+            var token = lexer.IsWord();
 
             Assert.NotNull(token);
             Assert.Equal(TokenType.Func, token?.Type);
@@ -677,11 +675,11 @@ namespace CayLang.Assembler.Tests
         }
 
         [Fact]
-        public void IsKeywordEmitsDefineTokenAndTransitionsToStart()
+        public void IsWordEmitsDefineTokenAndTransitionsToStart()
         {
-            using var lexer = new Lexer(new StringReader(".define "))
+            using var lexer = new Lexer(new StringReader("define "))
             {
-                Mode = Lexer.LexerMode.IsKeyword
+                Mode = Lexer.LexerMode.IsWord
             };
             lexer.Append();
             lexer.Append();
@@ -689,12 +687,29 @@ namespace CayLang.Assembler.Tests
             lexer.Append();
             lexer.Append();
             lexer.Append();
-            lexer.Append();
-            var token = lexer.IsKeyword();
+            var token = lexer.IsWord();
 
             Assert.NotNull(token);
             Assert.Equal(TokenType.Define, token?.Type);
             Assert.Empty(lexer.Lexeme);
+            Assert.Equal(Lexer.LexerMode.Start, lexer.Mode);
+        }
+
+        [Fact]
+        public void IsWordEmitsIdentifierTokenAndTransitionsToStart()
+        {
+            using var lexer = new Lexer(new StringReader("a "))
+            {
+                Mode = Lexer.LexerMode.IsWord
+            };
+            lexer.Append();
+            var token = lexer.IsWord();
+
+            Assert.NotNull(token);
+            Assert.Equal(TokenType.Identifier, token.Type);
+            Assert.Equal("a", token.Value);
+            Assert.Empty(lexer.Lexeme);
+            Assert.Equal(' ', lexer.Current);
             Assert.Equal(Lexer.LexerMode.Start, lexer.Mode);
         }
         #endregion

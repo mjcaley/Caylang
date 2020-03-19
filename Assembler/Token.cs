@@ -49,6 +49,10 @@ namespace CayLang.Assembler
         u32Type,
         i64Type,
         u64Type,
+        AddressType,
+        f32Type,
+        f64Type,
+        StringType,
 
         // Literals
         IntegerLiteral,
