@@ -13,7 +13,8 @@ namespace CayLang.Assembler.Tests
         [Fact]
         public void BeginsInStartMode()
         {
-            using var lexer = new Lexer(new StringReader(""));
+            using var testInput = new StringReader("");
+            var lexer = new Lexer(testInput);
 
             Assert.Equal(Lexer.LexerMode.Start, lexer.Mode);
         }
@@ -21,7 +22,8 @@ namespace CayLang.Assembler.Tests
         [Fact]
         public void BeginsWithEmptyLexeme()
         {
-            using var lexer = new Lexer(new StringReader(""));
+            using var testInput = new StringReader("");
+            var lexer = new Lexer(testInput);
 
             Assert.Equal("", lexer.Lexeme);
         }
@@ -29,7 +31,8 @@ namespace CayLang.Assembler.Tests
         [Fact]
         public void BeginsWithLine1()
         {
-            using var lexer = new Lexer(new StringReader(""));
+            using var testInput = new StringReader("");
+            var lexer = new Lexer(testInput);
 
             Assert.Equal(1, lexer.Line);
         }
@@ -37,7 +40,8 @@ namespace CayLang.Assembler.Tests
         [Fact]
         public void NullCharacterWithEmptyString()
         {
-            using var lexer = new Lexer(new StringReader(""));
+            using var testInput = new StringReader("");
+            var lexer = new Lexer(testInput);
 
             Assert.Equal('\0', lexer.Current);
         }
@@ -45,7 +49,8 @@ namespace CayLang.Assembler.Tests
         [Fact]
         public void FirstCharacterOfStringAssignedToCurrent()
         {
-            using var lexer = new Lexer(new StringReader("a"));
+            using var testInput = new StringReader("a");
+            var lexer = new Lexer(testInput);
 
             Assert.Equal('a', lexer.Current);
         }
@@ -53,7 +58,8 @@ namespace CayLang.Assembler.Tests
         [Fact]
         public void AdvanceReturnsPreviousValue()
         {
-            using var lexer = new Lexer(new StringReader("123"));
+            using var testInput = new StringReader("123");
+            var lexer = new Lexer(testInput);
             var result = lexer.Advance();
 
             Assert.Equal('1', result);
@@ -62,7 +68,8 @@ namespace CayLang.Assembler.Tests
         [Fact]
         public void AppendTest()
         {
-            using var lexer = new Lexer(new StringReader("123"));
+            using var testInput = new StringReader("123");
+            var lexer = new Lexer(testInput);
 
             Assert.Empty(lexer.Lexeme);
             lexer.Append();
@@ -73,7 +80,8 @@ namespace CayLang.Assembler.Tests
         public void ConsumeTest()
         {
             var input = "1";
-            using var lexer = new Lexer(new StringReader(input));
+            using var testInput = new StringReader(input);
+            var lexer = new Lexer(testInput);
             lexer.Append();
             var result = lexer.Consume();
 
@@ -84,7 +92,8 @@ namespace CayLang.Assembler.Tests
         [Fact]
         public void AdvanceAssignsNextValueToCurrent()
         {
-            using var lexer = new Lexer(new StringReader("123"));
+            using var testInput = new StringReader("123");
+            var lexer = new Lexer(testInput);
             lexer.Advance();
 
             Assert.Equal('2', lexer.Current);
@@ -93,7 +102,8 @@ namespace CayLang.Assembler.Tests
         [Fact]
         public void AdvanceNewlineIncrementsLine()
         {
-            using var lexer = new Lexer(new StringReader("\n"));
+            using var testInput = new StringReader("\n");
+            var lexer = new Lexer(testInput);
             lexer.Advance();
 
             Assert.Equal(2, lexer.Line);
@@ -102,7 +112,8 @@ namespace CayLang.Assembler.Tests
         [Fact]
         public void AdvanceCarriageReturnIsNewline()
         {
-            using var lexer = new Lexer(new StringReader("\r"));
+            using var testInput = new StringReader("\r");
+            var lexer = new Lexer(testInput);
             
             Assert.Equal('\n', lexer.Current);
         }
@@ -110,15 +121,18 @@ namespace CayLang.Assembler.Tests
         [Fact]
         public void AdvanceCarriageReturnIncrementsLine()
         {
-            using var lexer = new Lexer(new StringReader("\r"));
+            using var testInput = new StringReader("\r");
+            var lexer = new Lexer(testInput);
             lexer.Advance();
 
             Assert.Equal(2, lexer.Line);
         }
 
         [Fact]
-        public void AdvanceConsumesBothCarriageReturnNewLine(){
-            using var lexer = new Lexer(new StringReader("\r\n"));
+        public void AdvanceConsumesBothCarriageReturnNewLine()
+        {
+            using var testInput = new StringReader("\r\n");
+            var lexer = new Lexer(testInput);
 
             Assert.Equal('\n', lexer.Current);
         }
@@ -132,7 +146,8 @@ namespace CayLang.Assembler.Tests
         [InlineData("\v")]
         public void SkipWhitespaceAdvances(string data)
         {
-            using var lexer = new Lexer(new StringReader(data + "1"))
+            using var testInput = new StringReader(data + "1");
+            var lexer = new Lexer(testInput)
             {
                 Mode = Lexer.LexerMode.SkipWhitespace
             };
@@ -145,7 +160,8 @@ namespace CayLang.Assembler.Tests
         [Fact]
         public void SkipWhitespaceTransitionsToStart()
         {
-            using var lexer = new Lexer(new StringReader("1"))
+            using var testInput = new StringReader("1");
+            var lexer = new Lexer(testInput)
             {
                 Mode = Lexer.LexerMode.SkipWhitespace
             };
@@ -163,7 +179,8 @@ namespace CayLang.Assembler.Tests
         [InlineData("\v")]
         public void StartTransitionsToSkipWhitespace(string input)
         {
-            using var lexer = new Lexer(new StringReader(input));
+            using var testInput = new StringReader(input);
+            var lexer = new Lexer(testInput);
             var token = lexer.Start();
 
             Assert.Null(token);
@@ -176,7 +193,8 @@ namespace CayLang.Assembler.Tests
         [InlineData(":", TokenType.Colon)]
         public void StartReturnsToken(string input, TokenType type)
         {
-            using var lexer = new Lexer(new StringReader(input));
+            using var testInput = new StringReader(input);
+            var lexer = new Lexer(testInput);
             var token = lexer.Start();
 
             Assert.Equal(type, token?.Type);
@@ -202,7 +220,8 @@ namespace CayLang.Assembler.Tests
         [InlineData("c", Lexer.LexerMode.IsWord)]
         public void StartAppendsAndTransitions(string input, Lexer.LexerMode mode)
         {
-            using var lexer = new Lexer(new StringReader(input));
+            using var testInput = new StringReader(input);
+            var lexer = new Lexer(testInput);
             var token = lexer.Start();
 
             Assert.Null(token);
@@ -213,7 +232,8 @@ namespace CayLang.Assembler.Tests
         [Fact]
         public void StartDiscardsAndTransitions()
         {
-            using var lexer = new Lexer(new StringReader("\"1"));
+            using var testInput = new StringReader("\"1");
+            var lexer = new Lexer(testInput);
             var token = lexer.Start();
 
             Assert.Null(token);
@@ -225,7 +245,8 @@ namespace CayLang.Assembler.Tests
         [Fact]
         public void StartEmitsErrorToken()
         {
-            using var lexer = new Lexer(new StringReader("*"));
+            using var testInput = new StringReader("*");
+            var lexer = new Lexer(testInput);
             var token = lexer.Start();
 
             Assert.NotNull(token);
@@ -239,7 +260,8 @@ namespace CayLang.Assembler.Tests
         [Fact]
         public void NegativeTransitionsToDigit()
         {
-            using var lexer = new Lexer(new StringReader("-0"))
+            using var testInput = new StringReader("-0");
+            var lexer = new Lexer(testInput)
             {
                 Mode = Lexer.LexerMode.IsNegative
             };
@@ -263,7 +285,8 @@ namespace CayLang.Assembler.Tests
         [InlineData("9")]
         public void NegativeTransitionsToDecimal(string data)
         {
-            using var lexer = new Lexer(new StringReader("-" + data))
+            using var testInput = new StringReader("-" + data);
+            var lexer = new Lexer(testInput)
             {
                 Mode = Lexer.LexerMode.IsNegative
             };
@@ -279,7 +302,8 @@ namespace CayLang.Assembler.Tests
         public void NegativeEmitsErrorToken()
         {
             const string input = "-a";
-            using var lexer = new Lexer(new StringReader(input))
+            using var testInput = new StringReader(input);
+            var lexer = new Lexer(testInput)
             {
                 Mode = Lexer.LexerMode.IsNegative
             };
@@ -301,7 +325,8 @@ namespace CayLang.Assembler.Tests
         public void DigitAppendAndTransition(string data, Lexer.LexerMode mode)
         {
             var input = "0" + data;
-            using var lexer = new Lexer(new StringReader(input))
+            using var testInput = new StringReader(input);
+            var lexer = new Lexer(testInput)
             {
                 Mode = Lexer.LexerMode.Digit
             };
@@ -316,7 +341,8 @@ namespace CayLang.Assembler.Tests
         [Fact]
         public void DigitEmitsIntegerAndTransitionsToStart()
         {
-            using var lexer = new Lexer(new StringReader("1"))
+            using var testInput = new StringReader("1");
+            var lexer = new Lexer(testInput)
             {
                 Mode = Lexer.LexerMode.Digit
             };
@@ -344,7 +370,8 @@ namespace CayLang.Assembler.Tests
         [InlineData("9")]
         public void DecimalAppendsDigit(string input)
         {
-            using var lexer = new Lexer(new StringReader("1" + input))
+            using var testInput = new StringReader("1" + input);
+            var lexer = new Lexer(testInput)
             {
                 Mode = Lexer.LexerMode.IsDecimal
             };
@@ -360,7 +387,8 @@ namespace CayLang.Assembler.Tests
         public void DecimalAppendsDotAndTransitionsToFloat()
         {
             const string input = "0.";
-            using var lexer = new Lexer(new StringReader(input))
+            using var testInput = new StringReader(input);
+            var lexer = new Lexer(testInput)
             {
                 Mode = Lexer.LexerMode.IsDecimal
             };
@@ -375,7 +403,8 @@ namespace CayLang.Assembler.Tests
         [Fact]
         public void DecimalEmitsIntegerTokenAndTransitionsToStart()
         {
-            using var lexer = new Lexer(new StringReader("1 "))
+            using var testInput = new StringReader("1 ");
+            var lexer = new Lexer(testInput)
             {
                 Mode = Lexer.LexerMode.IsDecimal
             };
@@ -411,7 +440,8 @@ namespace CayLang.Assembler.Tests
         [InlineData('f')]
         public void IsHexadecimalAppendsToLexeme(char data)
         {
-            using var lexer = new Lexer(new StringReader("0x" + data))
+            using var testInput = new StringReader("0x" + data);
+            var lexer = new Lexer(testInput)
             {
                 Mode = Lexer.LexerMode.IsHexadecimal
             };
@@ -427,7 +457,8 @@ namespace CayLang.Assembler.Tests
         [Fact]
         public void IsHexadecimalEmitsIntegerTokenWhenNoMatch()
         {
-            using var lexer = new Lexer(new StringReader("0x1 "))
+            using var testInput = new StringReader("0x1 ");
+            var lexer = new Lexer(testInput)
             {
                 Mode = Lexer.LexerMode.IsHexadecimal
             };
@@ -451,7 +482,8 @@ namespace CayLang.Assembler.Tests
         [InlineData('1')]
         public void IsBinaryAppendsToLexeme(char data)
         {
-            using var lexer = new Lexer(new StringReader("0b" + data))
+            using var testInput = new StringReader("0b" + data);
+            var lexer = new Lexer(testInput)
             {
                 Mode = Lexer.LexerMode.IsBinary
             };
@@ -467,7 +499,8 @@ namespace CayLang.Assembler.Tests
         [Fact]
         public void IsBinaryEmitsIntegerTokenWhenNoMatch()
         {
-            using var lexer = new Lexer(new StringReader("0b1 "))
+            using var testInput = new StringReader("0b1 ");
+            var lexer = new Lexer(testInput)
             {
                 Mode = Lexer.LexerMode.IsBinary
             };
@@ -498,7 +531,8 @@ namespace CayLang.Assembler.Tests
         [InlineData('9')]
         public void IsFloatAppendsToLexeme(char data)
         {
-            using var lexer = new Lexer(new StringReader("0." + data))
+            using var testInput = new StringReader("0." + data);
+            var lexer = new Lexer(testInput)
             {
                 Mode = Lexer.LexerMode.IsFloat
             };
@@ -514,7 +548,8 @@ namespace CayLang.Assembler.Tests
         [Fact]
         public void IsFloatEmitsFloatTokenWhenNoMatch()
         {
-            using var lexer = new Lexer(new StringReader("0.0 "))
+            using var testInput = new StringReader("0.0 ");
+            var lexer = new Lexer(testInput)
             {
                 Mode = Lexer.LexerMode.IsFloat
             };
@@ -535,7 +570,8 @@ namespace CayLang.Assembler.Tests
         [Fact]
         public void IsStringAppendsToLexeme()
         {
-            using var lexer = new Lexer(new StringReader("\"a\""))
+            using var testInput = new StringReader("\"a\"");
+            var lexer = new Lexer(testInput)
             {
                 Mode = Lexer.LexerMode.IsString
             };
@@ -550,7 +586,8 @@ namespace CayLang.Assembler.Tests
         [Fact]
         public void IsStringEmitsStringTokenOnDoubleQuote()
         {
-            using var lexer = new Lexer(new StringReader("\"a\""))
+            using var testInput = new StringReader("\"a\"");
+            var lexer = new Lexer(testInput)
             {
                 Mode = Lexer.LexerMode.IsString
             };
@@ -568,7 +605,8 @@ namespace CayLang.Assembler.Tests
         [Fact]
         public void IsStringEmitsStringTokenOnEmptyString()
         {
-            using var lexer = new Lexer(new StringReader("\"\""))
+            using var testInput = new StringReader("\"\"");
+            var lexer = new Lexer(testInput)
             {
                 Mode = Lexer.LexerMode.IsString
             };
@@ -585,7 +623,8 @@ namespace CayLang.Assembler.Tests
         [Fact]
         public void IsStringEmitsErrorTokenOnNewline()
         {
-            using var lexer = new Lexer(new StringReader("\"\n"))
+            using var testInput = new StringReader("\"\n");
+            var lexer = new Lexer(testInput)
             {
                 Mode = Lexer.LexerMode.IsString
             };
@@ -609,7 +648,8 @@ namespace CayLang.Assembler.Tests
         [InlineData("\"", "\"")]
         public void IsStringEscapeCharactersProduceControlCharacters(string escape, string expected)
         {
-            using var lexer = new Lexer(new StringReader("\"\\" + escape))
+            using var testInput = new StringReader("\"\\" + escape);
+            var lexer = new Lexer(testInput)
             {
                 Mode = Lexer.LexerMode.IsString
             };
@@ -624,7 +664,8 @@ namespace CayLang.Assembler.Tests
         [Fact]
         public void IsStringInvalidEscapeCharacterEmitsErrorToken()
         {
-            using var lexer = new Lexer(new StringReader("\"\\q"))
+            using var testInput = new StringReader("\"\\q");
+            var lexer = new Lexer(testInput)
             {
                 Mode = Lexer.LexerMode.IsString
             };
@@ -643,7 +684,8 @@ namespace CayLang.Assembler.Tests
         [Fact]
         public void IsWordAppendsToLexeme()
         {
-            using var lexer = new Lexer(new StringReader(".f"))
+            using var testInput = new StringReader(".f");
+            var lexer = new Lexer(testInput)
             {
                 Mode = Lexer.LexerMode.IsWord
             };
@@ -658,7 +700,8 @@ namespace CayLang.Assembler.Tests
         [Fact]
         public void IsWordEmitsFuncTokenAndTransitionsToStart()
         {
-            using var lexer = new Lexer(new StringReader("func "))
+            using var testInput = new StringReader("func ");
+            var lexer = new Lexer(testInput)
             {
                 Mode = Lexer.LexerMode.IsWord
             };
@@ -677,7 +720,8 @@ namespace CayLang.Assembler.Tests
         [Fact]
         public void IsWordEmitsDefineTokenAndTransitionsToStart()
         {
-            using var lexer = new Lexer(new StringReader("define "))
+            using var testInput = new StringReader("define ");
+            var lexer = new Lexer(testInput)
             {
                 Mode = Lexer.LexerMode.IsWord
             };
@@ -698,7 +742,8 @@ namespace CayLang.Assembler.Tests
         [Fact]
         public void IsWordEmitsIdentifierTokenAndTransitionsToStart()
         {
-            using var lexer = new Lexer(new StringReader("a "))
+            using var testInput = new StringReader("a ");
+            var lexer = new Lexer(testInput)
             {
                 Mode = Lexer.LexerMode.IsWord
             };

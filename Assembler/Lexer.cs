@@ -36,7 +36,7 @@ namespace Caylang.Assembler
         public LexerDataException(string message, Exception inner): base(message, inner) { }
     }
 
-    public class Lexer : IDisposable
+    public class Lexer
     {
         public Lexer(TextReader stream)
         {
@@ -454,19 +454,19 @@ namespace Caylang.Assembler
 
         public static List<Token> LexString(string data)
         {
-            var stream = new StringReader(data);
+            using var stream = new StringReader(data);
             return Lex(stream);
         }
 
         public static List<Token> LexFile(string filename)
         {
-            var stream = File.OpenText(filename);
+            using var stream = File.OpenText(filename);
             return Lex(stream);
         }
 
         public static List<Token> Lex(TextReader stream)
         {
-            using var state = new Lexer(stream);
+            var state = new Lexer(stream);
             var tokens = new List<Token>();
 
             while (state.Current != '\0')
@@ -517,34 +517,5 @@ namespace Caylang.Assembler
 
             return tokens;
         }
-
-        #region IDisposable Support
-        private bool disposedValue = false; // To detect redundant calls
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposedValue)
-            {
-                if (disposing)
-                {
-                    _stream.Dispose();
-                }
-
-                disposedValue = true;
-            }
-        }
-
-        ~Lexer()
-        {
-            Dispose(false);
-        }
-
-        public void Dispose()
-        {
-            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-        #endregion
     }
 }
