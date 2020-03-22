@@ -1,11 +1,6 @@
 ﻿using System;
-using System.Buffers;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.IO;
-using System.Linq;
-using System.Reflection.Metadata;
-using System.Text;
 using CayLang.Assembler;
 
 namespace Caylang.Assembler
@@ -16,24 +11,6 @@ namespace Caylang.Assembler
         {
             list?.Add(token);
         }
-    }
-
-    public class LexerException : Exception
-    {
-        public LexerException() { }
-
-        public LexerException(string message) : base(message) { }
-
-        public LexerException(string message, Exception innerException) : base(message, innerException) { }
-    }
-
-    public class LexerDataException : LexerException
-    {
-        public LexerDataException() { }
-
-        public LexerDataException(string message) : base(message) { }
-
-        public LexerDataException(string message, Exception inner): base(message, inner) { }
     }
 
     public class Lexer
@@ -332,41 +309,21 @@ namespace Caylang.Assembler
 
             while (state.Current != '\0')
             {
-                switch (state.Mode)
+                var token = state.Mode switch
                 {
-                    case LexerMode.SkipWhitespace:
-                        state.SkipWhitespace();
-                        break;
-                    case LexerMode.Start:
-                        state.Start()?.AddTo(tokens);
-                        break;
-                    case LexerMode.IsNegative:
-                        state.Negative()?.AddTo(tokens);
-                        break;
-                    case LexerMode.Digit:
-                        state.Digit()?.AddTo(tokens);
-                        break;
-                    case LexerMode.IsDecimal:
-                        state.IsDecimal()?.AddTo(tokens);
-                        break;
-                    case LexerMode.IsBinary:
-                        state.IsBinary()?.AddTo(tokens);
-                        break;
-                    case LexerMode.IsHexadecimal:
-                        state.IsHexadecimal()?.AddTo(tokens);
-                        break;
-                    case LexerMode.IsFloat:
-                        state.IsFloat()?.AddTo(tokens);
-                        break;
-                    case LexerMode.IsString:
-                        state.IsString()?.AddTo(tokens);
-                        break;
-                    case LexerMode.IsWord:
-                        state.IsWord()?.AddTo(tokens);
-                        break;
-                    default:
-                        break;
-                }
+                    LexerMode.Start => state.Start(),
+                    LexerMode.SkipWhitespace => state.SkipWhitespace(),
+                    LexerMode.IsNegative => state.Negative(),
+                    LexerMode.Digit => state.Digit(),
+                    LexerMode.IsDecimal => state.IsDecimal(),
+                    LexerMode.IsBinary => state.IsBinary(),
+                    LexerMode.IsHexadecimal => state.IsHexadecimal(),
+                    LexerMode.IsFloat => state.IsFloat(),
+                    LexerMode.IsString => state.IsString(),
+                    LexerMode.IsWord => state.IsWord(),
+                    _ => state.Emit()
+                };
+                token?.AddTo(tokens);
 
                 if (state.Mode == LexerMode.End)
                 {
