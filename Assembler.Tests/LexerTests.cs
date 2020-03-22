@@ -731,7 +731,6 @@ namespace CayLang.Assembler.Tests
         #endregion
 
         #region IsWord rule
-
         [Fact]
         public void IsWordAppendsToLexeme()
         {
@@ -807,6 +806,84 @@ namespace CayLang.Assembler.Tests
             Assert.Empty(lexer.Lexeme);
             Assert.Equal(' ', lexer.Current);
             Assert.Equal(Lexer.LexerMode.Start, lexer.Mode);
+        }
+
+        [Theory]
+        [InlineData("func", TokenType.Func)]
+        [InlineData("define", TokenType.Define)]
+        [InlineData("args", TokenType.Args)]
+        [InlineData("locals", TokenType.Locals)]
+        [InlineData("halt", TokenType.Halt)]
+        [InlineData("nop", TokenType.Noop)]
+        [InlineData("add", TokenType.Add)]
+        [InlineData("sub", TokenType.Subtract)]
+        [InlineData("mul", TokenType.Multiply)]
+        [InlineData("div", TokenType.Divide)]
+        [InlineData("mod", TokenType.Modulo)]
+        [InlineData("ldconst", TokenType.LoadConst)]
+        [InlineData("ldlocal", TokenType.LoadLocal)]
+        [InlineData("stlocal", TokenType.StoreLocal)]
+        [InlineData("pop", TokenType.Pop)]
+        [InlineData("testeq", TokenType.TestEqual)]
+        [InlineData("testne", TokenType.TestNotEqual)]
+        [InlineData("testgt", TokenType.TestGreaterThan)]
+        [InlineData("testlt", TokenType.TestLessThan)]
+        [InlineData("jmp", TokenType.Jump)]
+        [InlineData("jmpt", TokenType.JumpTrue)]
+        [InlineData("jmpf", TokenType.JumpFalse)]
+        [InlineData("callfunc", TokenType.CallFunc)]
+        [InlineData("callinterface", TokenType.CallInterface)]
+        [InlineData("ret", TokenType.Return)]
+        [InlineData("newstruct", TokenType.NewStruct)]
+        [InlineData("ldfield", TokenType.LoadField)]
+        [InlineData("stfield", TokenType.StoreField)]
+        [InlineData("addr", TokenType.AddressType)]
+        [InlineData("i8", TokenType.i8Type)]
+        [InlineData("u8", TokenType.u8Type)]
+        [InlineData("i16", TokenType.i16Type)]
+        [InlineData("u16", TokenType.u16Type)]
+        [InlineData("i32", TokenType.i32Type)]
+        [InlineData("u32", TokenType.u32Type)]
+        [InlineData("i64", TokenType.i64Type)]
+        [InlineData("u64", TokenType.u64Type)]
+        [InlineData("f32", TokenType.f32Type)]
+        [InlineData("f64", TokenType.f64Type)]
+        [InlineData("str", TokenType.StringType)]
+        public void IsWordEmitsKeywordToken(string input, TokenType type)
+        {
+            using var testInput = new StringReader(input);
+            var lexer = new Lexer(testInput)
+            {
+                Mode = Lexer.LexerMode.IsWord
+            };
+            Token? token = null;
+            while (token is null)
+            {
+                token ??= lexer.IsWord();
+            }
+
+            Assert.NotNull(token);
+            Assert.Equal(type, token?.Type);
+            Assert.Empty(lexer.Lexeme);
+            Assert.Equal(Lexer.LexerMode.Start, lexer.Mode);
+        }
+        #endregion
+
+        #region End rule
+        [Fact]
+        public void EndEmitsEndOfFileToken()
+        {
+            using var testInput = new StringReader("");
+            var lexer = new Lexer(testInput)
+            {
+                Mode = Lexer.LexerMode.End
+            };
+            var token = lexer.End();
+
+            Assert.NotNull(token);
+            Assert.Equal(TokenType.EndOfFile, token?.Type);
+            Assert.Empty(lexer.Lexeme);
+            Assert.Equal(Lexer.LexerMode.None, lexer.Mode);
         }
         #endregion
     }

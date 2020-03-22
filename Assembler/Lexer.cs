@@ -33,7 +33,8 @@ namespace Caylang.Assembler
             IsFloat,
             IsString,
             IsWord,
-            End
+            End,
+            None
         }
 
         public LexerMode Mode { get; set; } = LexerMode.Start;
@@ -248,8 +249,8 @@ namespace Caylang.Assembler
                 {
                     "func" => Transition(LexerMode.Start).Discard().Emit(TokenType.Func),
                     "define" => Transition(LexerMode.Start).Discard().Emit(TokenType.Define),
-                    "args" => Transition(LexerMode.Start).Emit(TokenType.Param),
-                    "locals" => Transition(LexerMode.Start).Emit(TokenType.Param),
+                    "args" => Transition(LexerMode.Start).Discard().Emit(TokenType.Args),
+                    "locals" => Transition(LexerMode.Start).Discard().Emit(TokenType.Locals),
                     "halt" => Transition(LexerMode.Start).Discard().Emit(TokenType.Halt),
                     "nop" => Transition(LexerMode.Start).Discard().Emit(TokenType.Noop),
                     "add" => Transition(LexerMode.Start).Discard().Emit(TokenType.Add),
@@ -285,10 +286,15 @@ namespace Caylang.Assembler
                     "u64" => Transition(LexerMode.Start).Discard().Emit(TokenType.u64Type),
                     "f32" => Transition(LexerMode.Start).Discard().Emit(TokenType.f32Type),
                     "f64" => Transition(LexerMode.Start).Discard().Emit(TokenType.f64Type),
-                    "str" => Transition(LexerMode.Start).Discard().Emit(TokenType.StringLiteral),
+                    "str" => Transition(LexerMode.Start).Discard().Emit(TokenType.StringType),
                     _ => Transition(LexerMode.Start).Emit(TokenType.Identifier)
                 }
             };
+
+        public Token? End()
+        {
+            return Transition(LexerMode.None).Discard().Emit(TokenType.EndOfFile);
+        }
 
         public static List<Token> LexString(string data)
         {
@@ -307,7 +313,7 @@ namespace Caylang.Assembler
             var state = new Lexer(stream);
             var tokens = new List<Token>();
 
-            while (state.Current != '\0')
+            while (state.Mode != LexerMode.None)
             {
                 var token = state.Mode switch
                 {
@@ -321,17 +327,11 @@ namespace Caylang.Assembler
                     LexerMode.IsFloat => state.IsFloat(),
                     LexerMode.IsString => state.IsString(),
                     LexerMode.IsWord => state.IsWord(),
+                    LexerMode.End => state.End(),
                     _ => state.Emit()
                 };
                 token?.AddTo(tokens);
-
-                if (state.Mode == LexerMode.End)
-                {
-                    break;
-                }
             }
-
-            tokens.Add(new Token(TokenType.EndOfFile, state.Line));
 
             return tokens;
         }

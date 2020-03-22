@@ -62,7 +62,8 @@ namespace CayLang.Assembler
 
         // Assembler tokens
         Func,
-        Param,
+        Args,
+        Locals,
         Define,
         Equal,
         Colon,
