@@ -72,8 +72,21 @@ namespace CayLang.Assembler.Tests
             var lexer = new Lexer(testInput);
 
             Assert.Empty(lexer.Lexeme);
-            lexer.Append();
+            var l = lexer.Append();
+            Assert.Same(lexer, l);
             Assert.Equal("1", lexer.Lexeme);
+        }
+
+        [Fact]
+        public void AppendUsesArgument()
+        {
+            using var testInput = new StringReader("123");
+            var lexer = new Lexer(testInput);
+
+            Assert.Empty(lexer.Lexeme);
+            var l = lexer.Append('4');
+            Assert.Same(lexer, l);
+            Assert.Equal("4", lexer.Lexeme);
         }
 
         [Fact]
@@ -87,6 +100,20 @@ namespace CayLang.Assembler.Tests
 
             Assert.Equal(input, result);
             Assert.Empty(lexer.Lexeme);
+        }
+
+        [Fact]
+        public void DiscardTest()
+        {
+            var input = "1";
+            using var testInput = new StringReader(input);
+            var lexer = new Lexer(testInput);
+            lexer.Append();
+            var l = lexer.Discard();
+
+            Assert.Same(lexer, l);
+            Assert.Empty(lexer.Lexeme);
+            Assert.NotEqual('1', lexer.Current);
         }
 
         [Fact]
@@ -151,10 +178,34 @@ namespace CayLang.Assembler.Tests
             {
                 Mode = Lexer.LexerMode.SkipWhitespace
             };
-            lexer.SkipWhitespace();
+            var token = lexer.SkipWhitespace();
 
+            Assert.Null(token);
             Assert.Equal('1', lexer.Current);
             Assert.Equal(Lexer.LexerMode.SkipWhitespace, lexer.Mode);
+        }
+
+        [Fact]
+        public void SkipTest()
+        {
+            using var testInput = new StringReader("123");
+            var lexer = new Lexer(testInput);
+            var l = lexer.Skip();
+
+            Assert.Same(lexer, l);
+            Assert.Equal('2', lexer.Current);
+            Assert.Empty(lexer.Lexeme);
+        }
+
+        [Fact]
+        public void TransitionTest()
+        {
+            using var testInput = new StringReader("123");
+            var lexer = new Lexer(testInput);
+            var l = lexer.Transition(Lexer.LexerMode.End);
+
+            Assert.Same(lexer, l);
+            Assert.Equal(Lexer.LexerMode.End, lexer.Mode);
         }
 
         [Fact]

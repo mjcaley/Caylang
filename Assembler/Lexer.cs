@@ -59,13 +59,6 @@ namespace Caylang.Assembler
             End
         }
 
-        private static readonly ReadOnlyCollection<char> HexChars = new List<char>
-        {
-            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-            'a', 'b', 'c', 'd', 'e', 'f',
-            'A', 'B', 'C', 'D', 'E', 'F'
-        }.AsReadOnly();
-
         public LexerMode Mode { get; set; } = LexerMode.Start;
 
         public string Lexeme { get; set; } = "";
@@ -118,10 +111,20 @@ namespace Caylang.Assembler
             return previous;
         }
 
-        public void Append()
+        public Lexer Append()
         {
             Lexeme += Current;
             Advance();
+
+            return this;
+        }
+
+        public Lexer Append(char character)
+        {
+            Lexeme += character;
+            Advance();
+
+            return this;
         }
 
         public string Consume()
@@ -132,325 +135,183 @@ namespace Caylang.Assembler
             return lexeme;
         }
 
-        private Token CreateToken(TokenType type, string value = "")
+        public Lexer Skip()
         {
-            return new Token(type, value, Line);
+            Advance();
+
+            return this;
         }
 
-        private Token TransitionAndCreateToken(LexerMode mode, TokenType type, string value = "")
+        public Lexer Discard()
+        {
+            Consume();
+
+            return this;
+        }
+
+        public Token? Emit()
+        {
+            return null;
+        }
+
+        public Token? Emit(TokenType type)
+        {
+            return new Token(type, Consume(), Line);
+        }
+
+        public Lexer Transition(LexerMode mode)
         {
             Mode = mode;
-            return CreateToken(type, value);
+
+            return this;
         }
 
-        private Token? Transition(LexerMode mode)
-        {
-            Mode = mode;
-
-            return null;
-        }
-
-        public void SkipWhitespace()
-        {
-            switch (Current)
+        public Token? SkipWhitespace() =>
+            Current switch
             {
-                case var _ when char.IsWhiteSpace(Current):
-                    Advance();
-                    break;
-                default:
-                    Mode = LexerMode.Start;
-                    break;
-            }
-        }
+                var _ when char.IsWhiteSpace(Current) => Skip().Emit(),
+                _ => Transition(LexerMode.Start).Emit()
+            };
 
-        public Token? Start()
-        {
-            switch (Current)
+        public Token? Start() =>
+            Current switch
             {
-                case var _ when char.IsWhiteSpace(Current):
-                    Mode = LexerMode.SkipWhitespace;
-                    break;
-                case '=':
-                    return CreateToken(TokenType.Equal);
-                case ':':
-                    return CreateToken(TokenType.Colon);
-                case '-':
-                    Append();
-                    Mode = LexerMode.IsNegative;
-                    break;
-                case '0':
-                    Append();
-                    Mode = LexerMode.Digit;
-                    break;
-                case '1':
-                case '2':
-                case '3':
-                case '4':
-                case '5':
-                case '6':
-                case '7':
-                case '8':
-                case '9':
-                    Append();
-                    Mode = LexerMode.IsDecimal;
-                    break;
-                case '.':
-                    Append();
-                    Mode = LexerMode.IsWord;
-                    break;
-                case '"':
-                    Advance();
-                    Mode = LexerMode.IsString;
-                    break;
-                case '_':
-                case var _ when char.IsLetter(Current):
-                    Append();
-                    Mode = LexerMode.IsWord;
-                    break;
-                default:
-                    Append();
-                    return CreateToken(TokenType.Error, Consume());
-            }
+                var _ when char.IsWhiteSpace(Current) => Transition(LexerMode.SkipWhitespace).Emit(),
+                '=' => Discard().Emit(TokenType.Equal),
+                ':' => Discard().Emit(TokenType.Colon),
+                '-' => Append().Transition(LexerMode.IsNegative).Emit(),
+                '0' => Append().Transition(LexerMode.Digit).Emit(),
+                var x when 
+                    x >= '1' && 
+                    x <= '9' => Append().Transition(LexerMode.IsDecimal).Emit(),
+                '"' => Skip().Transition(LexerMode.IsString).Emit(),
+                var x when x == '_' || char.IsLetter(x) => Append().Transition(LexerMode.IsWord).Emit(),
+                _ => Append().Emit(TokenType.Error)
+            };
 
-            return null;
-        }
-
-        public Token? Negative()
-        {
-            switch (Current)
+        public Token? Negative() =>
+            Current switch
             {
-                case '0':
-                    Append();
-                    Mode = LexerMode.Digit;
-                    break;
-                case '1':
-                case '2':
-                case '3':
-                case '4':
-                case '5':
-                case '6':
-                case '7':
-                case '8':
-                case '9':
-                    Append();
-                    Mode = LexerMode.IsDecimal;
-                    break;
-                default:
-                    Append();
-                    return CreateToken(TokenType.Error, Consume());
-            }
+                '0' => Append().Transition(LexerMode.Digit).Emit(),
+                var x when 
+                    x >= '1' && 
+                    x <= '9' => Append().Transition(LexerMode.IsDecimal).Emit(),
+                _ => Append().Emit(TokenType.Error)
+            };
 
-            return null;
-        }
-
-        public Token? Digit()
-        {
-            switch (Current)
+        public Token? Digit() =>
+            Current switch
             {
-                case 'x':
-                    Append();
-                    Mode = LexerMode.IsHexadecimal;
-                    break;
-                case 'b':
-                    Append();
-                    Mode = LexerMode.IsBinary;
-                    break;
-                case '.':
-                    Append();
-                    Mode = LexerMode.IsFloat;
-                    break;
-                default:
-                    Append();
-                    Mode = LexerMode.Start;
-                    return CreateToken(TokenType.IntegerLiteral, Consume());
-            }
+                'x' => Append().Transition(LexerMode.IsHexadecimal).Emit(),
+                'b' => Append().Transition(LexerMode.IsBinary).Emit(),
+                '.' => Append().Transition(LexerMode.IsFloat).Emit(),
+                _ => Append().Transition(LexerMode.Start).Emit(TokenType.IntegerLiteral)
+            };
 
-            return null;
-        }
-
-        public Token? IsDecimal()
-        {
-            switch (Current)
+        public Token? IsDecimal() =>
+            Current switch
             {
-                case var _ when char.IsDigit(Current):
-                    Append();
-                    break;
-                case '.':
-                    Append();
-                    Mode = LexerMode.IsFloat;
-                    break;
-                default:
-                    Mode = LexerMode.Start;
-                    return CreateToken(TokenType.IntegerLiteral, Consume());
-            }
+                var _ when char.IsDigit(Current) => Append().Emit(),
+                '.' => Append().Transition(LexerMode.IsFloat).Emit(),
+                _ => Transition(LexerMode.Start).Emit(TokenType.IntegerLiteral)
+            };
 
-            return null;
-        }
-
-        public Token? IsHexadecimal()
-        {
-            switch (Current)
+        public Token? IsHexadecimal() =>
+            Current switch
             {
-                case var _ when HexChars.Contains(Current):
-                    Append();
-                    break;
-                default:
-                    Mode = LexerMode.Start;
-                    return CreateToken(TokenType.IntegerLiteral, Consume());
-            }
+                var x when
+                    (x >= '0' && x <= '9') ||
+                    (x >= 'a' && x <= 'f') ||
+                    (x >= 'A' && x <= 'F') => Append().Emit(),
+                _ => Transition(LexerMode.Start).Emit(TokenType.IntegerLiteral)
+            };
 
-            return null;
-        }
-
-        public Token? IsBinary()
-        {
-            switch (Current)
+        public Token? IsBinary() =>
+            Current switch
             {
-                case '0':
-                case '1':
-                    Append();
-                    break;
-                default:
-                    Mode = LexerMode.Start;
-                    return CreateToken(TokenType.IntegerLiteral, Consume());
-            }
+                var x when x == '0' || x == '1' => Append().Emit(),
+                _ => Transition(LexerMode.Start).Emit(TokenType.IntegerLiteral)
+            };
 
-            return null;
-        }
-
-        public Token? IsFloat()
-        {
-            switch (Current)
+        public Token? IsFloat() =>
+            Current switch
             {
-                case var _ when char.IsDigit(Current):
-                    Append();
-                    break;
-                default:
-                    Mode = LexerMode.Start;
-                    return CreateToken(TokenType.FloatLiteral, Consume());
-            }
+                var _ when char.IsDigit(Current) => Append().Emit(),
+                _ => Transition(LexerMode.Start).Emit(TokenType.FloatLiteral)
+            };
 
-            return null;
-        }
-
-        public Token? IsString()
-        {
-            switch (Current)
+        public Token? IsString() =>
+            Current switch
             {
-                case '\\':
-                    Advance();
-                    switch (Current)
+                var x when
+                    x == '\\' &&
+                    Skip().Current != '\0' => Current switch
                     {
-                        case 'a':
-                            Advance();
-                            Lexeme += '\a';
-                            break;
-                        case 'b':
-                            Advance();
-                            Lexeme += '\b';
-                            break;
-                        case 'f':
-                            Advance();
-                            Lexeme += '\f';
-                            break;
-                        case 'n':
-                            Advance();
-                            Lexeme += '\n';
-                            break;
-                        case 'r':
-                            Advance();
-                            Lexeme += '\r';
-                            break;
-                        case 't':
-                            Advance();
-                            Lexeme += '\t';
-                            break;
-                        case 'v':
-                            Advance();
-                            Lexeme += '\v';
-                            break;
-                        case '"':
-                            Advance();
-                            Lexeme += '"';
-                            break;
-                        default:
-                            Mode = LexerMode.Start;
-                            return CreateToken(TokenType.Error, Consume());
-                    }
+                        'a' => Append('\a').Emit(),
+                        'b' => Append('\b').Emit(),
+                        'f' => Append('\f').Emit(),
+                        'n' => Append('\n').Emit(),
+                        'r' => Append('\r').Emit(),
+                        't' => Append('\t').Emit(),
+                        'v' => Append('\v').Emit(),
+                        '"' => Append('"').Emit(),
+                        '0' => Append('\0').Emit(),
+                        _ => Transition(LexerMode.Start).Emit(TokenType.Error),
+                    },
+                '"' => Skip().Transition(LexerMode.Start).Emit(TokenType.StringLiteral),
+                '\n' => Transition(LexerMode.Start).Emit(TokenType.Error),
+                _ => Append().Emit()
+            };
 
-                    break;
-                case '"':
-                    Advance();
-                    Mode = LexerMode.Start;
-                    return CreateToken(TokenType.StringLiteral, Consume());
-                case '\n':
-                    Mode = LexerMode.Start;
-                    return CreateToken(TokenType.Error, Consume());
-                default:
-                    Append();
-                    break;
-            }
-
-            return null;
-        }
-
-        public Token? IsWord()
-        {
-            switch (Current)
+        public Token? IsWord() =>
+            Current switch
             {
-                case var _ when char.IsLetterOrDigit(Current):
-                    Append();
-                    break;
-                default:
-                    var value = Consume();
-                    return value switch
-                    {
-                        "func" => TransitionAndCreateToken(LexerMode.Start, TokenType.Func),
-                        "define" => TransitionAndCreateToken(LexerMode.Start, TokenType.Define),
-                        "args" => TransitionAndCreateToken(LexerMode.Start, TokenType.Param, value),
-                        "locals" => TransitionAndCreateToken(LexerMode.Start, TokenType.Param, value),
-                        "halt" => TransitionAndCreateToken(LexerMode.Start, TokenType.Halt),
-                        "nop" => TransitionAndCreateToken(LexerMode.Start, TokenType.Noop),
-                        "add" => TransitionAndCreateToken(LexerMode.Start, TokenType.Add),
-                        "sub" => TransitionAndCreateToken(LexerMode.Start, TokenType.Subtract),
-                        "mul" => TransitionAndCreateToken(LexerMode.Start, TokenType.Multiply),
-                        "div" => TransitionAndCreateToken(LexerMode.Start, TokenType.Divide),
-                        "mod" => TransitionAndCreateToken(LexerMode.Start, TokenType.Modulo),
-                        "ldconst" => TransitionAndCreateToken(LexerMode.Start, TokenType.LoadConst),
-                        "ldlocal" => TransitionAndCreateToken(LexerMode.Start, TokenType.LoadLocal),
-                        "stconst" => TransitionAndCreateToken(LexerMode.Start, TokenType.StoreLocal),
-                        "pop" => TransitionAndCreateToken(LexerMode.Start, TokenType.Pop),
-                        "testeq" => TransitionAndCreateToken(LexerMode.Start, TokenType.TestEqual),
-                        "testne" => TransitionAndCreateToken(LexerMode.Start, TokenType.TestNotEqual),
-                        "testgt" => TransitionAndCreateToken(LexerMode.Start, TokenType.TestGreaterThan),
-                        "testlt" => TransitionAndCreateToken(LexerMode.Start, TokenType.TestLessThan),
-                        "jmp" => TransitionAndCreateToken(LexerMode.Start, TokenType.Jump),
-                        "jmpt" => TransitionAndCreateToken(LexerMode.Start, TokenType.JumpTrue),
-                        "jmpf" => TransitionAndCreateToken(LexerMode.Start, TokenType.JumpFalse),
-                        "callfunc" => TransitionAndCreateToken(LexerMode.Start, TokenType.CallFunc),
-                        "callinterface" => TransitionAndCreateToken(LexerMode.Start, TokenType.CallInterface),
-                        "ret" => TransitionAndCreateToken(LexerMode.Start, TokenType.Return),
-                        "newstruct" => TransitionAndCreateToken(LexerMode.Start, TokenType.NewStruct),
-                        "ldfield" => TransitionAndCreateToken(LexerMode.Start, TokenType.LoadField),
-                        "stfield" => TransitionAndCreateToken(LexerMode.Start, TokenType.StoreField),
-                        "addr" => TransitionAndCreateToken(LexerMode.Start, TokenType.AddressType),
-                        "i8" => TransitionAndCreateToken(LexerMode.Start, TokenType.i8Type),
-                        "u8" => TransitionAndCreateToken(LexerMode.Start, TokenType.u8Type),
-                        "i16" => TransitionAndCreateToken(LexerMode.Start, TokenType.i16Type),
-                        "u16" => TransitionAndCreateToken(LexerMode.Start, TokenType.u16Type),
-                        "i32" => TransitionAndCreateToken(LexerMode.Start, TokenType.i32Type),
-                        "u32" => TransitionAndCreateToken(LexerMode.Start, TokenType.u32Type),
-                        "i64" => TransitionAndCreateToken(LexerMode.Start, TokenType.i64Type),
-                        "u64" => TransitionAndCreateToken(LexerMode.Start, TokenType.u64Type),
-                        "f32" => TransitionAndCreateToken(LexerMode.Start, TokenType.f32Type),
-                        "f64" => TransitionAndCreateToken(LexerMode.Start, TokenType.f64Type),
-                        "str" => TransitionAndCreateToken(LexerMode.Start, TokenType.StringType),
-                        _ => TransitionAndCreateToken(LexerMode.Start, TokenType.Identifier, value)
-                    };
-            }
-
-            return null;
-        }
+                var x when char.IsLetterOrDigit(x) => Append().Emit(),
+                _ => Lexeme switch
+                {
+                    "func" => Transition(LexerMode.Start).Discard().Emit(TokenType.Func),
+                    "define" => Transition(LexerMode.Start).Discard().Emit(TokenType.Define),
+                    "args" => Transition(LexerMode.Start).Emit(TokenType.Param),
+                    "locals" => Transition(LexerMode.Start).Emit(TokenType.Param),
+                    "halt" => Transition(LexerMode.Start).Discard().Emit(TokenType.Halt),
+                    "nop" => Transition(LexerMode.Start).Discard().Emit(TokenType.Noop),
+                    "add" => Transition(LexerMode.Start).Discard().Emit(TokenType.Add),
+                    "sub" => Transition(LexerMode.Start).Discard().Emit(TokenType.Subtract),
+                    "mul" => Transition(LexerMode.Start).Discard().Emit(TokenType.Multiply),
+                    "div" => Transition(LexerMode.Start).Discard().Emit(TokenType.Divide),
+                    "mod" => Transition(LexerMode.Start).Discard().Emit(TokenType.Modulo),
+                    "ldconst" => Transition(LexerMode.Start).Discard().Emit(TokenType.LoadConst),
+                    "ldlocal" => Transition(LexerMode.Start).Discard().Emit(TokenType.LoadLocal),
+                    "stlocal" => Transition(LexerMode.Start).Discard().Emit(TokenType.StoreLocal),
+                    "pop" => Transition(LexerMode.Start).Discard().Emit(TokenType.Pop),
+                    "testeq" => Transition(LexerMode.Start).Discard().Emit(TokenType.TestEqual),
+                    "testne" => Transition(LexerMode.Start).Discard().Emit(TokenType.TestNotEqual),
+                    "testgt" => Transition(LexerMode.Start).Discard().Emit(TokenType.TestGreaterThan),
+                    "testlt" => Transition(LexerMode.Start).Discard().Emit(TokenType.TestLessThan),
+                    "jmp" => Transition(LexerMode.Start).Discard().Emit(TokenType.Jump),
+                    "jmpt" => Transition(LexerMode.Start).Discard().Emit(TokenType.JumpTrue),
+                    "jmpf" => Transition(LexerMode.Start).Discard().Emit(TokenType.JumpFalse),
+                    "callfunc" => Transition(LexerMode.Start).Discard().Emit(TokenType.CallFunc),
+                    "callinterface" => Transition(LexerMode.Start).Discard().Emit(TokenType.CallInterface),
+                    "ret" => Transition(LexerMode.Start).Discard().Emit(TokenType.Return),
+                    "newstruct" => Transition(LexerMode.Start).Discard().Emit(TokenType.NewStruct),
+                    "ldfield" => Transition(LexerMode.Start).Discard().Emit(TokenType.LoadField),
+                    "stfield" => Transition(LexerMode.Start).Discard().Emit(TokenType.StoreField),
+                    "addr" => Transition(LexerMode.Start).Discard().Emit(TokenType.AddressType),
+                    "i8" => Transition(LexerMode.Start).Discard().Emit(TokenType.i8Type),
+                    "u8" => Transition(LexerMode.Start).Discard().Emit(TokenType.u8Type),
+                    "i16" => Transition(LexerMode.Start).Discard().Emit(TokenType.i16Type),
+                    "u16" => Transition(LexerMode.Start).Discard().Emit(TokenType.u16Type),
+                    "i32" => Transition(LexerMode.Start).Discard().Emit(TokenType.i32Type),
+                    "u32" => Transition(LexerMode.Start).Discard().Emit(TokenType.u32Type),
+                    "i64" => Transition(LexerMode.Start).Discard().Emit(TokenType.i64Type),
+                    "u64" => Transition(LexerMode.Start).Discard().Emit(TokenType.u64Type),
+                    "f32" => Transition(LexerMode.Start).Discard().Emit(TokenType.f32Type),
+                    "f64" => Transition(LexerMode.Start).Discard().Emit(TokenType.f64Type),
+                    "str" => Transition(LexerMode.Start).Discard().Emit(TokenType.StringLiteral),
+                    _ => Transition(LexerMode.Start).Emit(TokenType.Identifier)
+                }
+            };
 
         public static List<Token> LexString(string data)
         {
