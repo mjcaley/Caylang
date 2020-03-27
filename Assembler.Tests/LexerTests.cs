@@ -369,11 +369,26 @@ namespace CayLang.Assembler.Tests
         #endregion
 
         #region Digit rule
+        [Fact]
+        public void DigitAppendAndTransition()
+        {
+            using var testInput = new StringReader("0.");
+            var lexer = new Lexer(testInput)
+            {
+                Mode = Lexer.LexerMode.Digit
+            };
+            lexer.Append();
+            var token = lexer.Digit();
+
+            Assert.Null(token);
+            Assert.Equal(Lexer.LexerMode.IsFloat, lexer.Mode);
+            Assert.Equal("0.", lexer.Lexeme);
+        }
+
         [Theory]
         [InlineData("x", Lexer.LexerMode.IsHexadecimal)]
         [InlineData("b", Lexer.LexerMode.IsBinary)]
-        [InlineData(".", Lexer.LexerMode.IsFloat)]
-        public void DigitAppendAndTransition(string data, Lexer.LexerMode mode)
+        public void DigitDiscardsAndTransitions(string data, Lexer.LexerMode mode)
         {
             var input = "0" + data;
             using var testInput = new StringReader(input);
@@ -386,7 +401,7 @@ namespace CayLang.Assembler.Tests
 
             Assert.Null(token);
             Assert.Equal(mode, lexer.Mode);
-            Assert.Equal(input, lexer.Lexeme);
+            Assert.Empty(lexer.Lexeme);
         }
 
         [Fact]
@@ -473,54 +488,57 @@ namespace CayLang.Assembler.Tests
         #region IsHexadecimal rule
 
         [Theory]
-        [InlineData('0')]
-        [InlineData('1')]
-        [InlineData('2')]
-        [InlineData('3')]
-        [InlineData('4')]
-        [InlineData('5')]
-        [InlineData('6')]
-        [InlineData('7')]
-        [InlineData('8')]
-        [InlineData('9')]
-        [InlineData('a')]
-        [InlineData('b')]
-        [InlineData('c')]
-        [InlineData('d')]
-        [InlineData('e')]
-        [InlineData('f')]
-        public void IsHexadecimalAppendsToLexeme(char data)
+        [InlineData("0")]
+        [InlineData("1")]
+        [InlineData("2")]
+        [InlineData("3")]
+        [InlineData("4")]
+        [InlineData("5")]
+        [InlineData("6")]
+        [InlineData("7")]
+        [InlineData("8")]
+        [InlineData("9")]
+        [InlineData("a")]
+        [InlineData("b")]
+        [InlineData("c")]
+        [InlineData("d")]
+        [InlineData("e")]
+        [InlineData("f")]
+        [InlineData("A")]
+        [InlineData("B")]
+        [InlineData("C")]
+        [InlineData("D")]
+        [InlineData("E")]
+        [InlineData("F")]
+        public void IsHexadecimalAppendsToLexeme(string data)
         {
-            using var testInput = new StringReader("0x" + data);
+            using var testInput = new StringReader(data);
             var lexer = new Lexer(testInput)
             {
                 Mode = Lexer.LexerMode.IsHexadecimal
             };
-            lexer.Append();
-            lexer.Append();
             var token = lexer.IsHexadecimal();
 
             Assert.Null(token);
-            Assert.Equal("0x" + data, lexer.Lexeme);
+            Assert.Equal(data, lexer.Lexeme);
             Assert.Equal(Lexer.LexerMode.IsHexadecimal, lexer.Mode);
         }
 
         [Fact]
         public void IsHexadecimalEmitsIntegerTokenWhenNoMatch()
         {
-            using var testInput = new StringReader("0x1 ");
+            using var testInput = new StringReader("2a ");
             var lexer = new Lexer(testInput)
             {
                 Mode = Lexer.LexerMode.IsHexadecimal
             };
             lexer.Append();
             lexer.Append();
-            lexer.Append();
             var token = lexer.IsHexadecimal();
 
             Assert.NotNull(token);
             Assert.Equal(TokenType.IntegerLiteral, token?.Type);
-            Assert.Equal("0x1", token?.Value);
+            Assert.Equal("42", token?.Value);
             Assert.Equal(Lexer.LexerMode.Start, lexer.Mode);
             Assert.Empty(lexer.Lexeme);
         }
@@ -550,7 +568,7 @@ namespace CayLang.Assembler.Tests
         [Fact]
         public void IsBinaryEmitsIntegerTokenWhenNoMatch()
         {
-            using var testInput = new StringReader("0b1 ");
+            using var testInput = new StringReader("101 ");
             var lexer = new Lexer(testInput)
             {
                 Mode = Lexer.LexerMode.IsBinary
@@ -562,7 +580,7 @@ namespace CayLang.Assembler.Tests
 
             Assert.NotNull(token);
             Assert.Equal(TokenType.IntegerLiteral, token?.Type);
-            Assert.Equal("0b1", token?.Value);
+            Assert.Equal("5", token?.Value);
             Assert.Empty(lexer.Lexeme);
             Assert.Equal(Lexer.LexerMode.Start, lexer.Mode);
         }

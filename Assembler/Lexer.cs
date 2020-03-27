@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using CayLang.Assembler;
+using Microsoft.VisualBasic.CompilerServices;
 
 namespace Caylang.Assembler
 {
@@ -144,6 +146,14 @@ namespace Caylang.Assembler
             return this;
         }
 
+        public Lexer ReplaceLexeme(Func<string, string> with)
+        {
+            Lexeme = with(Lexeme);
+
+            return this;
+        }
+
+
         public Token? SkipWhitespace() =>
             Current switch
             {
@@ -180,8 +190,8 @@ namespace Caylang.Assembler
         public Token? Digit() =>
             Current switch
             {
-                'x' => Append().Transition(LexerMode.IsHexadecimal).Emit(),
-                'b' => Append().Transition(LexerMode.IsBinary).Emit(),
+                'x' => Skip().Discard().Transition(LexerMode.IsHexadecimal).Emit(),
+                'b' => Skip().Discard().Transition(LexerMode.IsBinary).Emit(),
                 '.' => Append().Transition(LexerMode.IsFloat).Emit(),
                 _ => Append().Transition(LexerMode.Start).Emit(TokenType.IntegerLiteral)
             };
@@ -201,15 +211,25 @@ namespace Caylang.Assembler
                     (x >= '0' && x <= '9') ||
                     (x >= 'a' && x <= 'f') ||
                     (x >= 'A' && x <= 'F') => Append().Emit(),
-                _ => Transition(LexerMode.Start).Emit(TokenType.IntegerLiteral)
+                _ => ReplaceLexeme((lexeme) =>
+                {
+                    var integer = Convert.ToInt64(lexeme, 16);
+                    return integer.ToString(CultureInfo.InvariantCulture);
+                }).Transition(LexerMode.Start).Emit(TokenType.IntegerLiteral)
             };
 
-        public Token? IsBinary() =>
-            Current switch
+        public Token? IsBinary()
+        {
+            return Current switch
             {
                 var x when x == '0' || x == '1' => Append().Emit(),
-                _ => Transition(LexerMode.Start).Emit(TokenType.IntegerLiteral)
+                _ => ReplaceLexeme((lexeme) =>
+                {
+                    var integer = Convert.ToInt64(lexeme, 2);
+                    return integer.ToString(CultureInfo.InvariantCulture);
+                }).Transition(LexerMode.Start).Emit(TokenType.IntegerLiteral)
             };
+        }
 
         public Token? IsFloat() =>
             Current switch
