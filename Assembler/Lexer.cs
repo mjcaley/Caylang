@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Text;
 using CayLang.Assembler;
 using Microsoft.VisualBasic.CompilerServices;
 
@@ -41,7 +42,7 @@ namespace Caylang.Assembler
 
         public LexerMode Mode { get; set; } = LexerMode.Start;
 
-        public string Lexeme { get; set; } = "";
+        public StringBuilder Lexeme { get; set; } = new StringBuilder();
         
         private int _line = 1;
         public int Line => _line;
@@ -93,7 +94,7 @@ namespace Caylang.Assembler
 
         public Lexer Append()
         {
-            Lexeme += Current;
+            Lexeme.Append(Current);
             Advance();
 
             return this;
@@ -101,7 +102,7 @@ namespace Caylang.Assembler
 
         public Lexer Append(char character)
         {
-            Lexeme += character;
+            Lexeme.Append(character);
             Advance();
 
             return this;
@@ -109,8 +110,8 @@ namespace Caylang.Assembler
 
         public string Consume()
         {
-            var lexeme = Lexeme;
-            Lexeme = "";
+            var lexeme = Lexeme.ToString();
+            Lexeme.Clear();
 
             return lexeme;
         }
@@ -124,7 +125,7 @@ namespace Caylang.Assembler
 
         public Lexer Discard()
         {
-            Consume();
+            Lexeme.Clear();
 
             return this;
         }
@@ -148,7 +149,9 @@ namespace Caylang.Assembler
 
         public Lexer ReplaceLexeme(Func<string, string> with)
         {
-            Lexeme = with(Lexeme);
+            var replacement = with(Lexeme.ToString());
+            Lexeme.Clear();
+            Lexeme.Append(replacement);
 
             return this;
         }
@@ -265,7 +268,7 @@ namespace Caylang.Assembler
             Current switch
             {
                 var x when char.IsLetterOrDigit(x) => Append().Emit(),
-                _ => Lexeme switch
+                _ => Lexeme.ToString() switch
                 {
                     "func" => Transition(LexerMode.Start).Discard().Emit(TokenType.Func),
                     "define" => Transition(LexerMode.Start).Discard().Emit(TokenType.Define),
