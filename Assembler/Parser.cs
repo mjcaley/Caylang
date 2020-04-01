@@ -56,53 +56,5 @@ namespace Caylang.Assembler
         {
             return null;
         }
-
-        public long SignedInteger()
-        {
-            if (Current?.Type == TokenType.IntegerLiteral)
-            {
-               return Convert.ToInt64(Current.Value, CultureInfo.InvariantCulture);
-            }
-            else
-            {
-                throw new ParserException("Cannot convert to signed integer");
-            }
-        }
-
-        public ulong UnsignedInteger()
-        {
-            if (Current?.Type == TokenType.IntegerLiteral)
-            {
-               return Convert.ToUInt64(Current.Value, CultureInfo.InvariantCulture);
-            }
-            else
-            {
-                throw new ParserException("Cannot convert to unsigned integer");
-            }
-        }
-
-        public float FloatingPoint32()
-        {
-            if (Current?.Type == TokenType.FloatLiteral)
-            {
-                return Convert.ToSingle(Current.Value, CultureInfo.InvariantCulture);
-            }
-            else
-            {
-                throw new ParserException("Cannot convert to floating point value");
-            }
-        }
-
-        public double FloatingPoint64()
-        {
-            if (Current?.Type == TokenType.FloatLiteral)
-            {
-                return Convert.ToDouble(Current.Value, CultureInfo.InvariantCulture);
-            }
-            else
-            {
-                throw new ParserException("Cannot convert to floating point value");
-            }
-        }
     }
 }

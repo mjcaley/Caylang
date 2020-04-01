@@ -16,7 +16,7 @@ namespace CayLang.Assembler.Tests
             using var testInput = new StringReader("");
             var lexer = new Lexer(testInput);
 
-            Assert.Equal(Lexer.LexerMode.Start, lexer.Mode);
+            Assert.Equal(lexer.Start, lexer.Mode);
         }
 
         [Fact]
@@ -25,6 +25,7 @@ namespace CayLang.Assembler.Tests
             using var testInput = new StringReader("");
             var lexer = new Lexer(testInput);
 
+            Assert.NotNull(lexer.Lexeme);
             Assert.Equal("", lexer.Lexeme.ToString());
         }
 
@@ -174,15 +175,13 @@ namespace CayLang.Assembler.Tests
         public void SkipWhitespaceAdvances(string data)
         {
             using var testInput = new StringReader(data + "1");
-            var lexer = new Lexer(testInput)
-            {
-                Mode = Lexer.LexerMode.SkipWhitespace
-            };
+            var lexer = new Lexer(testInput);
+            lexer.Mode = lexer.SkipWhitespace;
             var token = lexer.SkipWhitespace();
 
             Assert.Null(token);
             Assert.Equal('1', lexer.Current);
-            Assert.Equal(Lexer.LexerMode.SkipWhitespace, lexer.Mode);
+            Assert.Equal(lexer.SkipWhitespace, lexer.Mode);
         }
 
         [Fact]
@@ -202,23 +201,32 @@ namespace CayLang.Assembler.Tests
         {
             using var testInput = new StringReader("123");
             var lexer = new Lexer(testInput);
-            var l = lexer.Transition(Lexer.LexerMode.End);
+            var l = lexer.Transition(lexer.End);
 
             Assert.Same(lexer, l);
-            Assert.Equal(Lexer.LexerMode.End, lexer.Mode);
+            Assert.Equal(lexer.End, lexer.Mode);
+        }
+
+        [Fact]
+        public void TransitionToNull()
+        {
+            using var testInput = new StringReader("123");
+            var lexer = new Lexer(testInput);
+            var l = lexer.Transition(null);
+
+            Assert.NotNull(l);
+            Assert.Null(lexer.Mode);
         }
 
         [Fact]
         public void SkipWhitespaceTransitionsToStart()
         {
             using var testInput = new StringReader("1");
-            var lexer = new Lexer(testInput)
-            {
-                Mode = Lexer.LexerMode.SkipWhitespace
-            };
+            var lexer = new Lexer(testInput);
+            lexer.Mode = lexer.SkipWhitespace;
             lexer.SkipWhitespace();
 
-            Assert.Equal(Lexer.LexerMode.Start, lexer.Mode);
+            Assert.Equal(lexer.Start, lexer.Mode);
         }
 		#endregion
 
@@ -236,12 +244,13 @@ namespace CayLang.Assembler.Tests
 
             Assert.Null(token);
             Assert.Equal(input?[0], lexer.Current);
-            Assert.Equal(Lexer.LexerMode.SkipWhitespace, lexer.Mode);
+            Assert.Equal(lexer.SkipWhitespace, lexer.Mode);
         }
 
         [Theory]
         [InlineData("=", TokenType.Equal)]
         [InlineData(":", TokenType.Colon)]
+        [InlineData("-", TokenType.Negative)]
         public void StartReturnsToken(string input, TokenType type)
         {
             using var testInput = new StringReader(input);
@@ -250,26 +259,44 @@ namespace CayLang.Assembler.Tests
 
             Assert.Equal(type, token?.Type);
             Assert.Equal(1, token?.Line);
-            Assert.Equal(Lexer.LexerMode.Start, lexer.Mode);
+            Assert.Equal(lexer.Start, lexer.Mode);
+        }
+
+        [Fact]
+        public void StartTransitionsToFloatAndReplacesLexeme()
+        {
+            using var testInput = new StringReader(".");
+            var lexer = new Lexer(testInput);
+            var token = lexer.Start();
+
+            Assert.Null(token);
+            Assert.Equal("0.", lexer.Lexeme.ToString());
+            Assert.Equal(lexer.FloatNumber, lexer.Mode);
+        }
+
+        [Fact]
+        public void StartAppendsAndTransitionsToNumberBase()
+        {
+            using var testInput = new StringReader("0");
+            var lexer = new Lexer(testInput);
+            var token = lexer.Start();
+
+            Assert.Null(token);
+            Assert.Equal("0", lexer.Lexeme.ToString());
+            Assert.Equal(lexer.NumberBase, lexer.Mode);
         }
 
         [Theory]
-        [InlineData("-", Lexer.LexerMode.IsNegative)]
-        [InlineData("0", Lexer.LexerMode.Digit)]
-        [InlineData("1", Lexer.LexerMode.IsDecimal)]
-        [InlineData("2", Lexer.LexerMode.IsDecimal)]
-        [InlineData("3", Lexer.LexerMode.IsDecimal)]
-        [InlineData("4", Lexer.LexerMode.IsDecimal)]
-        [InlineData("5", Lexer.LexerMode.IsDecimal)]
-        [InlineData("6", Lexer.LexerMode.IsDecimal)]
-        [InlineData("7", Lexer.LexerMode.IsDecimal)]
-        [InlineData("8", Lexer.LexerMode.IsDecimal)]
-        [InlineData("9", Lexer.LexerMode.IsDecimal)]
-        [InlineData("_", Lexer.LexerMode.IsWord)]
-        [InlineData("a", Lexer.LexerMode.IsWord)]
-        [InlineData("b", Lexer.LexerMode.IsWord)]
-        [InlineData("c", Lexer.LexerMode.IsWord)]
-        public void StartAppendsAndTransitions(string input, Lexer.LexerMode mode)
+        [InlineData("1")]
+        [InlineData("2")]
+        [InlineData("3")]
+        [InlineData("4")]
+        [InlineData("5")]
+        [InlineData("6")]
+        [InlineData("7")]
+        [InlineData("8")]
+        [InlineData("9")]
+        public void StartAppendsAndTransitionsToDecNumber(string input)
         {
             using var testInput = new StringReader(input);
             var lexer = new Lexer(testInput);
@@ -277,7 +304,26 @@ namespace CayLang.Assembler.Tests
 
             Assert.Null(token);
             Assert.Equal(input, lexer.Lexeme.ToString());
-            Assert.Equal(lexer.Mode, mode);
+            Assert.Equal(lexer.DecNumber, lexer.Mode);
+        }
+
+        [Theory]
+        [InlineData("_")]
+        [InlineData("a")]
+        [InlineData("b")]
+        [InlineData("c")]
+        [InlineData("d")]
+        [InlineData("e")]
+        [InlineData("f")]
+        public void StartAppendsAndTransitionsToKeyword(string input)
+        {
+            using var testInput = new StringReader(input);
+            var lexer = new Lexer(testInput);
+            var token = lexer.Start();
+
+            Assert.Null(token);
+            Assert.Equal(input, lexer.Lexeme.ToString());
+            Assert.Equal(lexer.Keyword, lexer.Mode);
         }
 
         [Fact]
@@ -290,7 +336,7 @@ namespace CayLang.Assembler.Tests
             Assert.Null(token);
             Assert.Empty(lexer.Lexeme.ToString());
             Assert.Equal('1', lexer.Current);
-            Assert.Equal(Lexer.LexerMode.IsString, lexer.Mode);
+            Assert.Equal(lexer.StringValue, lexer.Mode);
         }
 
         [Fact]
@@ -302,127 +348,66 @@ namespace CayLang.Assembler.Tests
 
             Assert.NotNull(token);
             Assert.Equal(TokenType.Error, token?.Type);
-            Assert.Equal("*", token?.Value);
             Assert.Empty(lexer.Lexeme.ToString());
         }
         #endregion
 
-        #region IsNegative rule
+        #region NumberBase
         [Fact]
-        public void NegativeTransitionsToDigit()
+        public void NumberBaseTransitionsToHexNumber()
         {
-            using var testInput = new StringReader("-0");
-            var lexer = new Lexer(testInput)
-            {
-                Mode = Lexer.LexerMode.IsNegative
-            };
-            lexer.Append();
-            var token = lexer.Negative();
+            using var testInput = new StringReader("0x");
+            var lexer = new Lexer(testInput);
+            lexer.Advance();
+            var token = lexer.NumberBase();
 
             Assert.Null(token);
-            Assert.Equal("-0", lexer.Lexeme.ToString());
-            Assert.Equal(Lexer.LexerMode.Digit, lexer.Mode);
-        }
-
-        [Theory]
-        [InlineData("1")]
-        [InlineData("2")]
-        [InlineData("3")]
-        [InlineData("4")]
-        [InlineData("5")]
-        [InlineData("6")]
-        [InlineData("7")]
-        [InlineData("8")]
-        [InlineData("9")]
-        public void NegativeTransitionsToDecimal(string data)
-        {
-            using var testInput = new StringReader("-" + data);
-            var lexer = new Lexer(testInput)
-            {
-                Mode = Lexer.LexerMode.IsNegative
-            };
-            lexer.Append();
-            var token = lexer.Negative();
-
-            Assert.Null(token);
-            Assert.Equal("-" + data, lexer.Lexeme.ToString());
-            Assert.Equal(Lexer.LexerMode.IsDecimal, lexer.Mode);
+            Assert.Empty(lexer.Lexeme.ToString());
+            Assert.Equal(lexer.HexNumber, lexer.Mode);
         }
 
         [Fact]
-        public void NegativeEmitsErrorToken()
+        public void NumberBaseTransitionsToBinNumber()
         {
-            const string input = "-a";
-            using var testInput = new StringReader(input);
-            var lexer = new Lexer(testInput)
-            {
-                Mode = Lexer.LexerMode.IsNegative
-            };
+            using var testInput = new StringReader("0b");
+            var lexer = new Lexer(testInput);
+            lexer.Advance();
+            var token = lexer.NumberBase();
+
+            Assert.Null(token);
+            Assert.Empty(lexer.Lexeme.ToString());
+            Assert.Equal(lexer.BinNumber, lexer.Mode);
+        }
+
+        [Fact]
+        public void NumberBaseTransitionsToFloatNumber()
+        {
+            using var testInput = new StringReader("0.");
+            var lexer = new Lexer(testInput);
             lexer.Append();
-            var token = lexer.Negative();
+            var token = lexer.NumberBase();
+
+            Assert.Null(token);
+            Assert.Equal("0.", lexer.Lexeme.ToString());
+            Assert.Equal(lexer.FloatNumber, lexer.Mode);
+        }
+
+        [Fact]
+        public void NumberBaseEmitsErrorTokenOnUnexpectedInput()
+        {
+            using var testInput = new StringReader("01");
+            var lexer = new Lexer(testInput);
+            lexer.Advance();
+            var token = lexer.NumberBase();
 
             Assert.NotNull(token);
             Assert.Equal(TokenType.Error, token?.Type);
-            Assert.Equal(input, token?.Value);
             Assert.Empty(lexer.Lexeme.ToString());
+            Assert.Equal(lexer.Start, lexer.Mode);
         }
         #endregion
 
-        #region Digit rule
-        [Fact]
-        public void DigitAppendAndTransition()
-        {
-            using var testInput = new StringReader("0.");
-            var lexer = new Lexer(testInput)
-            {
-                Mode = Lexer.LexerMode.Digit
-            };
-            lexer.Append();
-            var token = lexer.Digit();
-
-            Assert.Null(token);
-            Assert.Equal(Lexer.LexerMode.IsFloat, lexer.Mode);
-            Assert.Equal("0.", lexer.Lexeme.ToString());
-        }
-
-        [Theory]
-        [InlineData("x", Lexer.LexerMode.IsHexadecimal)]
-        [InlineData("b", Lexer.LexerMode.IsBinary)]
-        public void DigitDiscardsAndTransitions(string data, Lexer.LexerMode mode)
-        {
-            var input = "0" + data;
-            using var testInput = new StringReader(input);
-            var lexer = new Lexer(testInput)
-            {
-                Mode = Lexer.LexerMode.Digit
-            };
-            lexer.Append();
-            var token = lexer.Digit();
-
-            Assert.Null(token);
-            Assert.Equal(mode, lexer.Mode);
-            Assert.Empty(lexer.Lexeme.ToString());
-        }
-
-        [Fact]
-        public void DigitEmitsIntegerAndTransitionsToStart()
-        {
-            using var testInput = new StringReader("1");
-            var lexer = new Lexer(testInput)
-            {
-                Mode = Lexer.LexerMode.Digit
-            };
-            var token = lexer.Digit();
-
-            Assert.Equal(TokenType.IntegerLiteral, token?.Type);
-            Assert.Equal("1", token?.Value);
-            Assert.Equal(Lexer.LexerMode.Start, lexer.Mode);
-            Assert.Empty(lexer.Lexeme.ToString());
-        }
-        #endregion
-
-        #region IsDecimal rule
-
+        #region DecNumber rule
         [Theory]
         [InlineData("0")]
         [InlineData("1")]
@@ -434,58 +419,54 @@ namespace CayLang.Assembler.Tests
         [InlineData("7")]
         [InlineData("8")]
         [InlineData("9")]
-        public void DecimalAppendsDigit(string input)
+        public void DecNumberAppendsDigit(string input)
         {
             using var testInput = new StringReader("1" + input);
-            var lexer = new Lexer(testInput)
-            {
-                Mode = Lexer.LexerMode.IsDecimal
-            };
+            var lexer = new Lexer(testInput);
+            lexer.Mode = lexer.DecNumber;
             lexer.Append();
-            var token = lexer.IsDecimal();
+            var token = lexer.DecNumber();
 
             Assert.Null(token);
             Assert.Equal("1" + input, lexer.Lexeme.ToString());
-            Assert.Equal(Lexer.LexerMode.IsDecimal, lexer.Mode);
+            Assert.Equal(lexer.DecNumber, lexer.Mode);
         }
 
         [Fact]
-        public void DecimalAppendsDotAndTransitionsToFloat()
+        public void DecNumberAppendsDotAndTransitionsToFloat()
         {
             const string input = "0.";
             using var testInput = new StringReader(input);
-            var lexer = new Lexer(testInput)
-            {
-                Mode = Lexer.LexerMode.IsDecimal
-            };
+            var lexer = new Lexer(testInput);
+            lexer.Mode = lexer.DecNumber;
             lexer.Append();
-            var token = lexer.IsDecimal();
+            var token = lexer.DecNumber();
 
             Assert.Null(token);
             Assert.Equal(input, lexer.Lexeme.ToString());
-            Assert.Equal(Lexer.LexerMode.IsFloat, lexer.Mode);
+            Assert.Equal(lexer.FloatNumber, lexer.Mode);
         }
 
         [Fact]
-        public void DecimalEmitsIntegerTokenAndTransitionsToStart()
+        public void DecNumerEmitsIntegerTokenAndTransitionsToStart()
         {
             using var testInput = new StringReader("1 ");
-            var lexer = new Lexer(testInput)
-            {
-                Mode = Lexer.LexerMode.IsDecimal
-            };
+            var lexer = new Lexer(testInput);
+            lexer.Mode = lexer.DecNumber;
             lexer.Append();
-            var token = lexer.IsDecimal();
+            var token = lexer.DecNumber();
 
             Assert.NotNull(token);
             Assert.Equal(TokenType.IntegerLiteral, token?.Type);
-            Assert.Equal("1", token?.Value);
+            Assert.IsType<IntegerToken>(token);
+            var i = token as IntegerToken;
+            Assert.Equal(1UL, i?.Value);
             Assert.Empty(lexer.Lexeme.ToString());
-            Assert.Equal(Lexer.LexerMode.Start, lexer.Mode);
+            Assert.Equal(lexer.Start, lexer.Mode);
         }
         #endregion
 
-        #region IsHexadecimal rule
+        #region HexNumber rule
 
         [Theory]
         [InlineData("0")]
@@ -510,83 +491,79 @@ namespace CayLang.Assembler.Tests
         [InlineData("D")]
         [InlineData("E")]
         [InlineData("F")]
-        public void IsHexadecimalAppendsToLexeme(string data)
+        public void HexNumberAppendsToLexeme(string data)
         {
             using var testInput = new StringReader(data);
-            var lexer = new Lexer(testInput)
-            {
-                Mode = Lexer.LexerMode.IsHexadecimal
-            };
-            var token = lexer.IsHexadecimal();
+            var lexer = new Lexer(testInput);
+            lexer.Mode = lexer.HexNumber;
+            var token = lexer.HexNumber();
 
             Assert.Null(token);
             Assert.Equal(data, lexer.Lexeme.ToString());
-            Assert.Equal(Lexer.LexerMode.IsHexadecimal, lexer.Mode);
+            Assert.Equal(lexer.HexNumber, lexer.Mode);
         }
 
         [Fact]
-        public void IsHexadecimalEmitsIntegerTokenWhenNoMatch()
+        public void HexNumberEmitsIntegerTokenWhenNoMatch()
         {
             using var testInput = new StringReader("2a ");
-            var lexer = new Lexer(testInput)
-            {
-                Mode = Lexer.LexerMode.IsHexadecimal
-            };
+            var lexer = new Lexer(testInput);
+            lexer.Mode = lexer.HexNumber;
             lexer.Append();
             lexer.Append();
-            var token = lexer.IsHexadecimal();
+            var token = lexer.HexNumber();
 
             Assert.NotNull(token);
             Assert.Equal(TokenType.IntegerLiteral, token?.Type);
-            Assert.Equal("42", token?.Value);
-            Assert.Equal(Lexer.LexerMode.Start, lexer.Mode);
+            Assert.IsType<IntegerToken>(token);
+            var i = token as IntegerToken;
+            Assert.Equal(42UL, i?.Value);
+            Assert.Equal(lexer.Start, lexer.Mode);
             Assert.Empty(lexer.Lexeme.ToString());
         }
         #endregion
 
-        #region IsBinary rule
+        #region BinNumber rule
 
         [Theory]
         [InlineData('0')]
         [InlineData('1')]
-        public void IsBinaryAppendsToLexeme(char data)
+        public void BinNumberAppendsToLexeme(char data)
         {
             using var testInput = new StringReader("0b" + data);
-            var lexer = new Lexer(testInput)
-            {
-                Mode = Lexer.LexerMode.IsBinary
-            };
+            var lexer = new Lexer(testInput);
+            lexer.Mode = lexer.BinNumber;
             lexer.Append();
             lexer.Append();
-            var token = lexer.IsBinary();
+            var token = lexer.BinNumber();
 
             Assert.Null(token);
             Assert.Equal("0b" + data, lexer.Lexeme.ToString());
-            Assert.Equal(Lexer.LexerMode.IsBinary, lexer.Mode);
+            Assert.Equal(lexer.BinNumber, lexer.Mode);
         }
 
         [Fact]
-        public void IsBinaryEmitsIntegerTokenWhenNoMatch()
+        public void BinNumberEmitsIntegerTokenWhenNoMatch()
         {
             using var testInput = new StringReader("101 ");
-            var lexer = new Lexer(testInput)
-            {
-                Mode = Lexer.LexerMode.IsBinary
-            };
+            var lexer = new Lexer(testInput);
+            lexer.Mode = lexer.BinNumber;
             lexer.Append();
             lexer.Append();
             lexer.Append();
-            var token = lexer.IsBinary();
+            var token = lexer.BinNumber();
 
             Assert.NotNull(token);
             Assert.Equal(TokenType.IntegerLiteral, token?.Type);
-            Assert.Equal("5", token?.Value);
+            Assert.IsType<IntegerToken>(token);
+            var i = token as IntegerToken;
+            Assert.Equal(5UL, i?.Value);
             Assert.Empty(lexer.Lexeme.ToString());
-            Assert.Equal(Lexer.LexerMode.Start, lexer.Mode);
+            Assert.Equal(lexer.Start, lexer.Mode);
         }
         #endregion
 
-        #region IsFloat rule
+        #region FloatNumber rule
         [Theory]
         [InlineData('0')]
         [InlineData('1')]
@@ -598,112 +575,106 @@ namespace CayLang.Assembler.Tests
         [InlineData('7')]
         [InlineData('8')]
         [InlineData('9')]
-        public void IsFloatAppendsToLexeme(char data)
+        public void FloatNumberAppendsToLexeme(char data)
         {
             using var testInput = new StringReader("0." + data);
-            var lexer = new Lexer(testInput)
-            {
-                Mode = Lexer.LexerMode.IsFloat
-            };
+            var lexer = new Lexer(testInput);
+            lexer.Mode = lexer.FloatNumber;
             lexer.Append();
             lexer.Append();
-            var token = lexer.IsFloat();
+            var token = lexer.FloatNumber();
 
             Assert.Null(token);
             Assert.Equal("0." + data, lexer.Lexeme.ToString());
-            Assert.Equal(Lexer.LexerMode.IsFloat, lexer.Mode);
+            Assert.Equal(lexer.FloatNumber, lexer.Mode);
         }
 
         [Fact]
-        public void IsFloatEmitsFloatTokenWhenNoMatch()
+        public void FloatNumberEmitsFloatTokenWhenNoMatch()
         {
             using var testInput = new StringReader("0.0 ");
-            var lexer = new Lexer(testInput)
-            {
-                Mode = Lexer.LexerMode.IsFloat
-            };
+            var lexer = new Lexer(testInput);
+            lexer.Mode = lexer.FloatNumber;
             lexer.Append();
             lexer.Append();
             lexer.Append();
-            var token = lexer.IsFloat();
+            var token = lexer.FloatNumber();
 
             Assert.NotNull(token);
             Assert.Equal(TokenType.FloatLiteral, token?.Type);
-            Assert.Equal("0.0", token?.Value);
+            Assert.IsType<FloatToken>(token);
+            var f = token as FloatToken;
+            Assert.Equal(0.0m, f?.Value);
             Assert.Empty(lexer.Lexeme.ToString());
-            Assert.Equal(Lexer.LexerMode.Start, lexer.Mode);
+            Assert.Equal(lexer.Start, lexer.Mode);
         }
         #endregion
 
-        #region IsString rule
+        #region StringValue rule
         [Fact]
-        public void IsStringAppendsToLexeme()
+        public void StringValueAppendsToLexeme()
         {
             using var testInput = new StringReader("\"a\"");
-            var lexer = new Lexer(testInput)
-            {
-                Mode = Lexer.LexerMode.IsString
-            };
+            var lexer = new Lexer(testInput);
+            lexer.Mode = lexer.StringValue;
             lexer.Advance();
-            var token = lexer.IsString();
+            var token = lexer.StringValue();
 
             Assert.Null(token);
             Assert.Equal("a", lexer.Lexeme.ToString());
-            Assert.Equal(Lexer.LexerMode.IsString, lexer.Mode);
+            Assert.Equal(lexer.StringValue, lexer.Mode);
         }
 
         [Fact]
-        public void IsStringEmitsStringTokenOnDoubleQuote()
+        public void StringValueEmitsStringTokenOnDoubleQuote()
         {
             using var testInput = new StringReader("\"a\"");
-            var lexer = new Lexer(testInput)
-            {
-                Mode = Lexer.LexerMode.IsString
-            };
+            var lexer = new Lexer(testInput);
+            lexer.Mode = lexer.StringValue;
             lexer.Advance();
             lexer.Append();
-            var token = lexer.IsString();
+            var token = lexer.StringValue();
 
             Assert.NotNull(token);
             Assert.Equal(TokenType.StringLiteral, token?.Type);
-            Assert.Equal("a", token?.Value);
+            Assert.IsType<StringToken>(token);
+            var s = token as StringToken;
+            Assert.Equal("a", s?.Value);
             Assert.Empty(lexer.Lexeme.ToString());
-            Assert.Equal(Lexer.LexerMode.Start, lexer.Mode);
+            Assert.Equal(lexer.Start, lexer.Mode);
         }
 
         [Fact]
-        public void IsStringEmitsStringTokenOnEmptyString()
+        public void StringValueEmitsStringTokenOnEmptyString()
         {
             using var testInput = new StringReader("\"\"");
-            var lexer = new Lexer(testInput)
-            {
-                Mode = Lexer.LexerMode.IsString
-            };
+            var lexer = new Lexer(testInput);
+            lexer.Mode = lexer.StringValue;
             lexer.Advance();
-            var token = lexer.IsString();
+            var token = lexer.StringValue();
 
             Assert.NotNull(token);
             Assert.Equal(TokenType.StringLiteral, token?.Type);
-            Assert.Equal("", token?.Value);
+            Assert.IsType<StringToken>(token);
+            var s = token as StringToken;
+            Assert.Equal("", s?.Value);
             Assert.Empty(lexer.Lexeme.ToString());
-            Assert.Equal(Lexer.LexerMode.Start, lexer.Mode);
+            Assert.Equal(lexer.Start, lexer.Mode);
         }
 
         [Fact]
-        public void IsStringEmitsErrorTokenOnNewline()
+        public void StringValueEmitsErrorTokenOnNewline()
         {
             using var testInput = new StringReader("\"\n");
-            var lexer = new Lexer(testInput)
-            {
-                Mode = Lexer.LexerMode.IsString
-            };
+            var lexer = new Lexer(testInput);
+            lexer.Mode = lexer.StringValue;
             lexer.Advance();
-            var token = lexer.IsString();
+            var token = lexer.StringValue();
 
             Assert.NotNull(token);
             Assert.Equal(TokenType.Error, token?.Type);
             Assert.Empty(lexer.Lexeme.ToString());
-            Assert.Equal(Lexer.LexerMode.Start, lexer.Mode);
+            Assert.Equal(lexer.Start, lexer.Mode);
         }
 
         [Theory]
@@ -715,115 +686,104 @@ namespace CayLang.Assembler.Tests
         [InlineData("t", "\t")]
         [InlineData("v", "\v")]
         [InlineData("\"", "\"")]
-        public void IsStringEscapeCharactersProduceControlCharacters(string escape, string expected)
+        public void StringValueEscapeCharactersProduceControlCharacters(string escape, string expected)
         {
             using var testInput = new StringReader("\"\\" + escape);
-            var lexer = new Lexer(testInput)
-            {
-                Mode = Lexer.LexerMode.IsString
-            };
+            var lexer = new Lexer(testInput);
+            lexer.Mode = lexer.StringValue;
             lexer.Advance();
-            var token = lexer.IsString();
+            var token = lexer.StringValue();
 
             Assert.Null(token);
             Assert.Equal(expected, lexer.Lexeme.ToString());
-            Assert.Equal(Lexer.LexerMode.IsString, lexer.Mode);
+            Assert.Equal(lexer.StringValue, lexer.Mode);
         }
 
         [Fact]
-        public void IsStringInvalidEscapeCharacterEmitsErrorToken()
+        public void StringValueInvalidEscapeCharacterEmitsErrorToken()
         {
             using var testInput = new StringReader("\"\\q");
-            var lexer = new Lexer(testInput)
-            {
-                Mode = Lexer.LexerMode.IsString
-            };
+            var lexer = new Lexer(testInput);
+            lexer.Mode = lexer.StringValue;
             lexer.Advance();
-            var token = lexer.IsString();
+            var token = lexer.StringValue();
 
             Assert.NotNull(token);
             Assert.Equal(TokenType.Error, token?.Type);
             Assert.Empty(lexer.Lexeme.ToString());
-            Assert.Equal(Lexer.LexerMode.Start, lexer.Mode);
+            Assert.Equal(lexer.Start, lexer.Mode);
         }
         #endregion
 
-        #region IsWord rule
+        #region Keyword rule
         [Fact]
-        public void IsWordAppendsToLexeme()
+        public void KeywordAppendsToLexeme()
         {
             using var testInput = new StringReader(".f");
-            var lexer = new Lexer(testInput)
-            {
-                Mode = Lexer.LexerMode.IsWord
-            };
+            var lexer = new Lexer(testInput);
+            lexer.Mode = lexer.Keyword;
             lexer.Append();
-            var token = lexer.IsWord();
+            var token = lexer.Keyword();
 
             Assert.Null(token);
             Assert.Equal(".f", lexer.Lexeme.ToString());
-            Assert.Equal(Lexer.LexerMode.IsWord, lexer.Mode);
+            Assert.Equal(lexer.Keyword, lexer.Mode);
         }
 
         [Fact]
-        public void IsWordEmitsFuncTokenAndTransitionsToStart()
+        public void KeywordEmitsFuncTokenAndTransitionsToStart()
         {
             using var testInput = new StringReader("func ");
-            var lexer = new Lexer(testInput)
-            {
-                Mode = Lexer.LexerMode.IsWord
-            };
+            var lexer = new Lexer(testInput);
+            lexer.Mode = lexer.Keyword;
             lexer.Append();
             lexer.Append();
             lexer.Append();
             lexer.Append();
-            var token = lexer.IsWord();
+            var token = lexer.Keyword();
 
             Assert.NotNull(token);
             Assert.Equal(TokenType.Func, token?.Type);
             Assert.Empty(lexer.Lexeme.ToString());
-            Assert.Equal(Lexer.LexerMode.Start, lexer.Mode);
+            Assert.Equal(lexer.Start, lexer.Mode);
         }
 
         [Fact]
-        public void IsWordEmitsDefineTokenAndTransitionsToStart()
+        public void KeywordEmitsDefineTokenAndTransitionsToStart()
         {
             using var testInput = new StringReader("define ");
-            var lexer = new Lexer(testInput)
-            {
-                Mode = Lexer.LexerMode.IsWord
-            };
+            var lexer = new Lexer(testInput);
+            lexer.Mode = lexer.Keyword;
             lexer.Append();
             lexer.Append();
             lexer.Append();
             lexer.Append();
             lexer.Append();
             lexer.Append();
-            var token = lexer.IsWord();
+            var token = lexer.Keyword();
 
             Assert.NotNull(token);
             Assert.Equal(TokenType.Define, token?.Type);
             Assert.Empty(lexer.Lexeme.ToString());
-            Assert.Equal(Lexer.LexerMode.Start, lexer.Mode);
+            Assert.Equal(lexer.Start, lexer.Mode);
         }
 
         [Fact]
-        public void IsWordEmitsIdentifierTokenAndTransitionsToStart()
+        public void KeywordEmitsIdentifierTokenAndTransitionsToStart()
         {
             using var testInput = new StringReader("a ");
-            var lexer = new Lexer(testInput)
-            {
-                Mode = Lexer.LexerMode.IsWord
-            };
+            var lexer = new Lexer(testInput);
+            lexer.Mode = lexer.Keyword;
             lexer.Append();
-            var token = lexer.IsWord();
+            var token = lexer.Keyword();
 
             Assert.NotNull(token);
             Assert.Equal(TokenType.Identifier, token?.Type);
-            Assert.Equal("a", token?.Value);
+            var s = token as ValueToken<string>;
+            Assert.Equal("a", s?.Value);
             Assert.Empty(lexer.Lexeme.ToString());
             Assert.Equal(' ', lexer.Current);
-            Assert.Equal(Lexer.LexerMode.Start, lexer.Mode);
+            Assert.Equal(lexer.Start, lexer.Mode);
         }
 
         [Theory]
@@ -870,20 +830,18 @@ namespace CayLang.Assembler.Tests
         public void IsWordEmitsKeywordToken(string input, TokenType type)
         {
             using var testInput = new StringReader(input);
-            var lexer = new Lexer(testInput)
-            {
-                Mode = Lexer.LexerMode.IsWord
-            };
+            var lexer = new Lexer(testInput);
+            lexer.Mode = lexer.Keyword;
             Token? token = null;
             while (token is null)
             {
-                token ??= lexer.IsWord();
+                token ??= lexer.Keyword();
             }
 
             Assert.NotNull(token);
             Assert.Equal(type, token?.Type);
             Assert.Empty(lexer.Lexeme.ToString());
-            Assert.Equal(Lexer.LexerMode.Start, lexer.Mode);
+            Assert.Equal(lexer.Start, lexer.Mode);
         }
         #endregion
 
@@ -892,16 +850,14 @@ namespace CayLang.Assembler.Tests
         public void EndEmitsEndOfFileToken()
         {
             using var testInput = new StringReader("");
-            var lexer = new Lexer(testInput)
-            {
-                Mode = Lexer.LexerMode.End
-            };
+            var lexer = new Lexer(testInput);
+            lexer.Mode = lexer.End;
             var token = lexer.End();
 
             Assert.NotNull(token);
             Assert.Equal(TokenType.EndOfFile, token?.Type);
             Assert.Empty(lexer.Lexeme.ToString());
-            Assert.Equal(Lexer.LexerMode.None, lexer.Mode);
+            Assert.Null(lexer.Mode);
         }
         #endregion
     }

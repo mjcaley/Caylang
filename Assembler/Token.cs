@@ -1,4 +1,5 @@
-﻿using Caylang.Assembler;
+﻿using System;
+using Caylang.Assembler;
 
 namespace CayLang.Assembler
 {
@@ -67,25 +68,44 @@ namespace CayLang.Assembler
         Define,
         Equal,
         Colon,
+        Negative,
 
         EndOfFile
     }
 
     public class Token
     {
-        public Token(TokenType type, string value, int line)
-        {
-            Type = type;
-            Line = line;
-            Value = value;
-        }
-
-        public Token(TokenType type, int line) : this(type, "", line) { }
+        public Token(TokenType type, int line) => (Type, Line) = (type, line);
 
         public TokenType Type { get; }
-
         public int Line { get; }
+    }
 
-        public string Value { get; }
+    public class ValueToken<T> : Token
+    {
+        public ValueToken(TokenType type, int line, T value) : base(type, line) =>
+            Value = value;
+
+        public T Value { get; }
+    }
+
+    public class IntegerToken : ValueToken<ulong>
+    {
+        public IntegerToken(TokenType type, int line, ulong value) : base(type, line, value) { }
+    }
+
+    public class FloatToken : ValueToken<decimal>
+    {
+        public FloatToken(TokenType type, int line, decimal value) : base(type, line, value) { }
+    }
+
+    public class IdentifierToken : ValueToken<string>
+    {
+        public IdentifierToken(TokenType type, int line, string value) : base(type, line, value) { }
+    }
+
+    public class StringToken : ValueToken<string>
+    {
+        public StringToken(TokenType type, int line, string value) : base(type, line, value) { }
     }
 }
