@@ -43,16 +43,11 @@ namespace Caylang.Assembler
         public Parser(IEnumerator<Token> tokens)
         {
             this.tokens = tokens;
-            Initialize();
+            Advance();
+            Advance();
         }
 
         public Parser(IEnumerable<Token> tokens) : this(tokens.GetEnumerator()) { }
-
-        private void Initialize()
-        {
-            Advance();
-            Advance();
-        }
 
         private void Advance()
         {
