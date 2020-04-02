@@ -1,23 +1,70 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections.Generic;
 using Caylang.Assembler;
-using CayLang.Assembler;
 using Xunit;
-using Xunit.Sdk;
 
 namespace CayLang.Assembler.Tests
 {
     public class ParserTests
     {
         [Fact]
-        public void SignedIntegerConvertsToValue()
+        public void HaltSuccess()
         {
-            var testInput = new Token[] { new ValueToken<ulong>(TokenType.IntegerLiteral, 1, 42UL) };
-            var parser = new Parser(testInput);
-            //var result = parser.SignedInteger();
+            var p = new Parser(
+                new Token[]
+                {
+                    new Token(TokenType.Halt, 1)
+                }
+            );
+            var n = p.Halt();
 
-            //Assert.Equal(42, result);
+            Assert.Equal(Caylang.Assembler.ParseTree.Type.Void, n.ReturnType);
+            Assert.Equal(Caylang.Assembler.ParseTree.InstructionType.Halt, n.Instruction);
+            Assert.Equal(1, n.Line);
+            
+            Assert.Null(p.Current);
+        }
+
+        [Fact]
+        public void HaltFail()
+        {
+            var p = new Parser(
+                new Token[]
+                {
+                    new Token(TokenType.EndOfFile, 1)
+                }
+            );
+
+            Assert.Throws<UnexpectedTokenException>(() => p.Halt());
+        }
+        [Fact]
+        public void PopSuccess()
+        {
+            var p = new Parser(
+                new[]
+                {
+                    new Token(TokenType.Pop, 1)
+                }
+            );
+            var n = p.Pop();
+
+            Assert.Equal(Caylang.Assembler.ParseTree.Type.Void, n.ReturnType);
+            Assert.Equal(Caylang.Assembler.ParseTree.InstructionType.Pop, n.Instruction);
+            Assert.Equal(1, n.Line);
+
+            Assert.Null(p.Current);
+        }
+
+        [Fact]
+        public void PopFail()
+        {
+            var p = new Parser(
+                new[]
+                {
+                    new Token(TokenType.EndOfFile, 1)
+                }
+            );
+
+            Assert.Throws<UnexpectedTokenException>(() => p.Pop());
         }
     }
 }
