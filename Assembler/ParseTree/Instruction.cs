@@ -35,7 +35,8 @@ namespace Caylang.Assembler.ParseTree
 		Ret,
 
 		LdConst,
-		StConst,
+		LdLocal,
+		StLocal,
 		Jmp,
 		JmpT,
 		JmpF,
