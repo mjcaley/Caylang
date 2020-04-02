@@ -139,5 +139,69 @@ namespace Caylang.Assembler
                 throw new UnexpectedTokenException(Current);
             }
         }
+
+        public NullaryInstruction Sub()
+        {
+            if (Current?.Type == TokenType.Subtract)
+            {
+                var instructionLine = Current.Line;
+                Advance();
+                var returnType = NumericType();
+
+                return new NullaryInstruction(InstructionType.Sub, returnType, instructionLine); ;
+            }
+            else
+            {
+                throw new UnexpectedTokenException(Current);
+            }
+        }
+
+        public NullaryInstruction Mul()
+        {
+            if (Current?.Type == TokenType.Multiply)
+            {
+                var instructionLine = Current.Line;
+                Advance();
+                var returnType = NumericType();
+
+                return new NullaryInstruction(InstructionType.Mul, returnType, instructionLine); ;
+            }
+            else
+            {
+                throw new UnexpectedTokenException(Current);
+            }
+        }
+
+        public NullaryInstruction Div()
+        {
+            if (Current?.Type == TokenType.Divide)
+            {
+                var instructionLine = Current.Line;
+                Advance();
+                var returnType = NumericType();
+
+                return new NullaryInstruction(InstructionType.Div, returnType, instructionLine); ;
+            }
+            else
+            {
+                throw new UnexpectedTokenException(Current);
+            }
+        }
+
+        public NullaryInstruction Mod()
+        {
+            if (Current?.Type == TokenType.Modulo)
+            {
+                var instructionLine = Current.Line;
+                Advance();
+                var returnType = NumericType();
+
+                return new NullaryInstruction(InstructionType.Mod, returnType, instructionLine); ;
+            }
+            else
+            {
+                throw new UnexpectedTokenException(Current);
+            }
+        }
     }
 }
