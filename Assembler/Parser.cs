@@ -104,41 +104,24 @@ namespace Caylang.Assembler
 
         public ParseTree.Type NumericType()
         {
-            switch (Current?.Type)
+            var match = Current?.Type switch
             {
-                case TokenType.i8Type:
-                    Advance();
-                    return Type.Integer8;
-                case TokenType.u8Type:
-                    Advance();
-                    return Type.UInteger8;
-                case TokenType.i16Type:
-                    Advance();
-                    return Type.Integer16;
-                case TokenType.u16Type:
-                    Advance();
-                    return Type.UInteger16;
-                case TokenType.i32Type:
-                    Advance();
-                    return Type.Integer32;
-                case TokenType.u32Type:
-                    Advance();
-                    return Type.UInteger32;
-                case TokenType.i64Type:
-                    Advance();
-                    return Type.Integer64;
-                case TokenType.u64Type:
-                    Advance();
-                    return Type.UInteger64;
-                case TokenType.f32Type:
-                    Advance();
-                    return Type.FloatingPoint32;
-                case TokenType.f64Type:
-                    Advance();
-                    return Type.FloatingPoint64;
-                default:
-                    throw new UnexpectedTokenException(Current);
-            }
+                TokenType.i8Type => Type.Integer8,
+                TokenType.u8Type => Type.UInteger8,
+                TokenType.i16Type => Type.Integer16,
+                TokenType.u16Type => Type.UInteger16,
+                TokenType.i32Type => Type.Integer32,
+                TokenType.u32Type => Type.UInteger32,
+                TokenType.i64Type => Type.Integer64,
+                TokenType.u64Type => Type.UInteger64,
+                TokenType.f32Type => Type.FloatingPoint32,
+                TokenType.f64Type => Type.FloatingPoint64,
+                _ => throw new UnexpectedTokenException(Current)
+            };
+
+            Advance();
+
+            return match;
         }
 
         public NullaryInstruction Add()
