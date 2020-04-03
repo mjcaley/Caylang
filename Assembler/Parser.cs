@@ -6,7 +6,7 @@ using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
 using System.Text;
-using Type = Caylang.Assembler.ParseTree.Type;
+using InstructionType = Caylang.Assembler.ParseTree.InstructionType;
 
 namespace Caylang.Assembler
 {
@@ -67,11 +67,11 @@ namespace Caylang.Assembler
             return null;
         }
 
-        public NullaryInstruction Halt()
+        private NullaryInstruction VoidInstruction(TokenType t, Instruction i)
         {
-            if (Current?.Type == TokenType.Halt)
+            if (Current?.Type == t)
             {
-                var value = new NullaryInstruction(InstructionType.Halt, ParseTree.Type.Void, Current.Line);
+                var value = new NullaryInstruction(i, ParseTree.InstructionType.Void, Current.Line);
                 Advance();
 
                 return value;
@@ -80,37 +80,32 @@ namespace Caylang.Assembler
             {
                 throw new UnexpectedTokenException(Current);
             }
+        }
+
+        public NullaryInstruction Halt()
+        {
+            return VoidInstruction(TokenType.Halt, Instruction.Halt);
         }
 
         public NullaryInstruction Pop()
         {
-            if (Current?.Type == TokenType.Pop)
-            {
-                var value = new NullaryInstruction(InstructionType.Pop, ParseTree.Type.Void, Current.Line);
-                Advance();
-
-                return value;
-            }
-            else
-            {
-                throw new UnexpectedTokenException(Current);
-            }
+            return VoidInstruction(TokenType.Pop, Instruction.Pop);
         }
 
-        public ParseTree.Type NumericType()
+        public ParseTree.InstructionType NumericType()
         {
             var match = Current?.Type switch
             {
-                TokenType.i8Type => Type.Integer8,
-                TokenType.u8Type => Type.UInteger8,
-                TokenType.i16Type => Type.Integer16,
-                TokenType.u16Type => Type.UInteger16,
-                TokenType.i32Type => Type.Integer32,
-                TokenType.u32Type => Type.UInteger32,
-                TokenType.i64Type => Type.Integer64,
-                TokenType.u64Type => Type.UInteger64,
-                TokenType.f32Type => Type.FloatingPoint32,
-                TokenType.f64Type => Type.FloatingPoint64,
+                TokenType.i8Type => InstructionType.Integer8,
+                TokenType.u8Type => InstructionType.UInteger8,
+                TokenType.i16Type => InstructionType.Integer16,
+                TokenType.u16Type => InstructionType.UInteger16,
+                TokenType.i32Type => InstructionType.Integer32,
+                TokenType.u32Type => InstructionType.UInteger32,
+                TokenType.i64Type => InstructionType.Integer64,
+                TokenType.u64Type => InstructionType.UInteger64,
+                TokenType.f32Type => InstructionType.FloatingPoint32,
+                TokenType.f64Type => InstructionType.FloatingPoint64,
                 _ => throw new UnexpectedTokenException(Current)
             };
 
@@ -119,84 +114,45 @@ namespace Caylang.Assembler
             return match;
         }
 
-        public NullaryInstruction Add()
+        private NullaryInstruction ArithmeticInstruction(TokenType t, Instruction i)
         {
-            if (Current?.Type == TokenType.Add)
+            if (Current?.Type == t)
             {
                 var instructionLine = Current.Line;
                 Advance();
                 var returnType = NumericType();
 
-                return new NullaryInstruction(InstructionType.Add, returnType, instructionLine); ;
+                return new NullaryInstruction(i, returnType, instructionLine); ;
             }
             else
             {
                 throw new UnexpectedTokenException(Current);
             }
+        }
+
+        public NullaryInstruction Add()
+        {
+            return ArithmeticInstruction(TokenType.Add, Instruction.Add);
         }
 
         public NullaryInstruction Sub()
         {
-            if (Current?.Type == TokenType.Subtract)
-            {
-                var instructionLine = Current.Line;
-                Advance();
-                var returnType = NumericType();
-
-                return new NullaryInstruction(InstructionType.Sub, returnType, instructionLine); ;
-            }
-            else
-            {
-                throw new UnexpectedTokenException(Current);
-            }
+            return ArithmeticInstruction(TokenType.Subtract, Instruction.Sub);
         }
 
         public NullaryInstruction Mul()
         {
-            if (Current?.Type == TokenType.Multiply)
-            {
-                var instructionLine = Current.Line;
-                Advance();
-                var returnType = NumericType();
-
-                return new NullaryInstruction(InstructionType.Mul, returnType, instructionLine); ;
-            }
-            else
-            {
-                throw new UnexpectedTokenException(Current);
-            }
+            return ArithmeticInstruction(TokenType.Multiply, Instruction.Mul);
         }
 
         public NullaryInstruction Div()
         {
-            if (Current?.Type == TokenType.Divide)
-            {
-                var instructionLine = Current.Line;
-                Advance();
-                var returnType = NumericType();
-
-                return new NullaryInstruction(InstructionType.Div, returnType, instructionLine); ;
-            }
-            else
-            {
-                throw new UnexpectedTokenException(Current);
-            }
+            return ArithmeticInstruction(TokenType.Divide, Instruction.Div);
         }
 
         public NullaryInstruction Mod()
         {
-            if (Current?.Type == TokenType.Modulo)
-            {
-                var instructionLine = Current.Line;
-                Advance();
-                var returnType = NumericType();
-
-                return new NullaryInstruction(InstructionType.Mod, returnType, instructionLine); ;
-            }
-            else
-            {
-                throw new UnexpectedTokenException(Current);
-            }
+            return ArithmeticInstruction(TokenType.Modulo, Instruction.Mod);
         }
     }
 }

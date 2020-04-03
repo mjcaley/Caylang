@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Caylang.Assembler.ParseTree
 {
-	public enum Type
+	public enum InstructionType
 	{
 		Void,
 		Integer8,
@@ -19,7 +19,7 @@ namespace Caylang.Assembler.ParseTree
 		FloatingPoint64,
 	}
 
-	public enum InstructionType
+	public enum Instruction
 	{
 		Halt,
 		Pop,
@@ -49,26 +49,26 @@ namespace Caylang.Assembler.ParseTree
 
 	public class InstructionStatement
 	{
-		public InstructionStatement(InstructionType instruction, int line) => (Instruction, Line) = (instruction, line);
+		public InstructionStatement(Instruction instruction, int line) => (Instruction, Line) = (instruction, line);
 
-		public InstructionType Instruction { get; }
+		public Instruction Instruction { get; }
 		public int Line { get; }
 	}
 
 	public class NullaryInstruction : InstructionStatement
 	{
-		public NullaryInstruction(InstructionType instruction, Type returnType, int line) : base(instruction, line) =>
+		public NullaryInstruction(Instruction instruction, InstructionType returnType, int line) : base(instruction, line) =>
 			ReturnType = returnType;
 
-		public Type ReturnType { get; }
+		public InstructionType ReturnType { get; }
 	}
 
 	public class UnaryInstruction : InstructionStatement
 	{
-		public UnaryInstruction(InstructionType instruction, Type returnType, Operand first, int line) : base(instruction, line) =>
+		public UnaryInstruction(Instruction instruction, InstructionType returnType, Operand first, int line) : base(instruction, line) =>
 			(ReturnType, First) = (returnType, first);
 
-		public Type ReturnType { get; }
+		public InstructionType ReturnType { get; }
 		public Operand First { get; }
 	}
 }

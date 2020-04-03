@@ -1,11 +1,49 @@
 ﻿using System.Collections.Generic;
 using Caylang.Assembler;
+using Caylang.Assembler.ParseTree;
 using Xunit;
 
 namespace CayLang.Assembler.Tests
 {
     public class ParserTests
     {
+        [Theory]
+        [InlineData(TokenType.i8Type, InstructionType.Integer8)]
+        [InlineData(TokenType.u8Type, InstructionType.UInteger8)]
+        [InlineData(TokenType.i16Type, InstructionType.Integer16)]
+        [InlineData(TokenType.u16Type, InstructionType.UInteger16)]
+        [InlineData(TokenType.i32Type, InstructionType.Integer32)]
+        [InlineData(TokenType.u32Type, InstructionType.UInteger32)]
+        [InlineData(TokenType.i64Type, InstructionType.Integer64)]
+        [InlineData(TokenType.u64Type, InstructionType.UInteger64)]
+        [InlineData(TokenType.f32Type, InstructionType.FloatingPoint32)]
+        [InlineData(TokenType.f64Type, InstructionType.FloatingPoint64)]
+        public void NumericTypeSuccess(TokenType testInput, InstructionType expected)
+        {
+            var p = new Parser(
+                new []
+                {
+                    new Token(testInput, 1)
+                }
+            );
+            var i = p.NumericType();
+
+            Assert.Equal(expected, i);
+        }
+
+        [Fact]
+        public void NumericTypeFail()
+        {
+            var p = new Parser(
+                new[]
+                {
+                    new Token(TokenType.EndOfFile, 1)
+                }
+            );
+
+            Assert.Throws<UnexpectedTokenException>(() => p.NumericType());
+        }
+
         [Fact]
         public void HaltSuccess()
         {
@@ -17,8 +55,8 @@ namespace CayLang.Assembler.Tests
             );
             var n = p.Halt();
 
-            Assert.Equal(Caylang.Assembler.ParseTree.Type.Void, n.ReturnType);
-            Assert.Equal(Caylang.Assembler.ParseTree.InstructionType.Halt, n.Instruction);
+            Assert.Equal(Caylang.Assembler.ParseTree.InstructionType.Void, n.ReturnType);
+            Assert.Equal(Caylang.Assembler.ParseTree.Instruction.Halt, n.Instruction);
             Assert.Equal(1, n.Line);
             
             Assert.Null(p.Current);
@@ -48,8 +86,8 @@ namespace CayLang.Assembler.Tests
             );
             var n = p.Pop();
 
-            Assert.Equal(Caylang.Assembler.ParseTree.Type.Void, n.ReturnType);
-            Assert.Equal(Caylang.Assembler.ParseTree.InstructionType.Pop, n.Instruction);
+            Assert.Equal(Caylang.Assembler.ParseTree.InstructionType.Void, n.ReturnType);
+            Assert.Equal(Caylang.Assembler.ParseTree.Instruction.Pop, n.Instruction);
             Assert.Equal(1, n.Line);
 
             Assert.Null(p.Current);
@@ -88,8 +126,8 @@ namespace CayLang.Assembler.Tests
             );
             var n = p.Add();
 
-            Assert.Equal(Caylang.Assembler.ParseTree.Type.Integer8, n.ReturnType);
-            Assert.Equal(Caylang.Assembler.ParseTree.InstructionType.Add, n.Instruction);
+            Assert.Equal(Caylang.Assembler.ParseTree.InstructionType.Integer8, n.ReturnType);
+            Assert.Equal(Caylang.Assembler.ParseTree.Instruction.Add, n.Instruction);
             Assert.Equal(1, n.Line);
 
             Assert.Null(p.Current);
@@ -128,8 +166,8 @@ namespace CayLang.Assembler.Tests
             );
             var n = p.Sub();
 
-            Assert.Equal(Caylang.Assembler.ParseTree.Type.Integer8, n.ReturnType);
-            Assert.Equal(Caylang.Assembler.ParseTree.InstructionType.Sub, n.Instruction);
+            Assert.Equal(Caylang.Assembler.ParseTree.InstructionType.Integer8, n.ReturnType);
+            Assert.Equal(Caylang.Assembler.ParseTree.Instruction.Sub, n.Instruction);
             Assert.Equal(1, n.Line);
 
             Assert.Null(p.Current);
@@ -168,8 +206,8 @@ namespace CayLang.Assembler.Tests
             );
             var n = p.Mul();
 
-            Assert.Equal(Caylang.Assembler.ParseTree.Type.Integer8, n.ReturnType);
-            Assert.Equal(Caylang.Assembler.ParseTree.InstructionType.Mul, n.Instruction);
+            Assert.Equal(Caylang.Assembler.ParseTree.InstructionType.Integer8, n.ReturnType);
+            Assert.Equal(Caylang.Assembler.ParseTree.Instruction.Mul, n.Instruction);
             Assert.Equal(1, n.Line);
 
             Assert.Null(p.Current);
@@ -208,8 +246,8 @@ namespace CayLang.Assembler.Tests
             );
             var n = p.Div();
 
-            Assert.Equal(Caylang.Assembler.ParseTree.Type.Integer8, n.ReturnType);
-            Assert.Equal(Caylang.Assembler.ParseTree.InstructionType.Div, n.Instruction);
+            Assert.Equal(Caylang.Assembler.ParseTree.InstructionType.Integer8, n.ReturnType);
+            Assert.Equal(Caylang.Assembler.ParseTree.Instruction.Div, n.Instruction);
             Assert.Equal(1, n.Line);
 
             Assert.Null(p.Current);
@@ -248,8 +286,8 @@ namespace CayLang.Assembler.Tests
             );
             var n = p.Mod();
 
-            Assert.Equal(Caylang.Assembler.ParseTree.Type.Integer8, n.ReturnType);
-            Assert.Equal(Caylang.Assembler.ParseTree.InstructionType.Mod, n.Instruction);
+            Assert.Equal(Caylang.Assembler.ParseTree.InstructionType.Integer8, n.ReturnType);
+            Assert.Equal(Caylang.Assembler.ParseTree.Instruction.Mod, n.Instruction);
             Assert.Equal(1, n.Line);
 
             Assert.Null(p.Current);
