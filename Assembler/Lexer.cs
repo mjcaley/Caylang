@@ -124,26 +124,9 @@ namespace Caylang.Assembler
             return new Token(type, Line);
         }
 
-        public IntegerToken? EmitInteger()
+        public Token? ConsumeAndEmit(TokenType type)
         {
-            var value = Convert.ToUInt64(Consume(), CultureInfo.InvariantCulture);
-            return new IntegerToken(TokenType.IntegerLiteral, Line, value);
-        }
-
-        public FloatToken? EmitFloat()
-        {
-            var value = Convert.ToDecimal(Consume(), CultureInfo.InvariantCulture);
-            return new FloatToken(TokenType.FloatLiteral, Line, value);
-        }
-
-        public IdentifierToken? EmitIdentifier()
-        {
-            return new IdentifierToken(TokenType.Identifier, Line, Consume());
-        }
-
-        public StringToken? EmitString()
-        {
-            return new StringToken(TokenType.StringLiteral, Line, Consume());
+            return new Token(type, Line, Consume());
         }
 
         public Lexer Transition(Func<Token?>? mode)
@@ -176,7 +159,7 @@ namespace Caylang.Assembler
                 var _ when char.IsWhiteSpace(Current) => Transition(SkipWhitespace).Emit(),
                 '=' => Discard().Emit(TokenType.Equal),
                 ':' => Discard().Emit(TokenType.Colon),
-                '-' => Discard().Emit(TokenType.Negative),
+                '-' => Append().Transition(NumberBase).Emit(),
                 '.' => ReplaceLexeme((_) => "0").Append().Transition(FloatNumber).Emit(),
                 '0' => Append().Transition(NumberBase).Emit(),
                 var x when 
@@ -205,7 +188,7 @@ namespace Caylang.Assembler
                 {
                     var integer = Convert.ToInt64(lexeme, 2);
                     return integer.ToString(CultureInfo.InvariantCulture);
-                }).Transition(Start).EmitInteger()
+                }).Transition(Start).ConsumeAndEmit(TokenType.IntegerLiteral)
             };
 
         public Token? HexNumber() =>
@@ -219,7 +202,7 @@ namespace Caylang.Assembler
                 {
                     var integer = Convert.ToUInt64(lexeme, 16);
                     return integer.ToString(CultureInfo.InvariantCulture);
-                }).Transition(Start).EmitInteger()
+                }).Transition(Start).ConsumeAndEmit(TokenType.IntegerLiteral)
             };
 
         public Token? DecNumber() =>
@@ -227,14 +210,14 @@ namespace Caylang.Assembler
             {
                 var _ when char.IsDigit(Current) => Append().Emit(),
                 '.' => Append().Transition(FloatNumber).Emit(),
-                _ => Transition(Start).EmitInteger()
+                _ => Transition(Start).ConsumeAndEmit(TokenType.IntegerLiteral)
             };
 
         public Token? FloatNumber() =>
             Current switch
             {
                 var _ when char.IsDigit(Current) => Append().Emit(),
-                _ => Transition(Start).EmitFloat()
+                _ => Transition(Start).ConsumeAndEmit(TokenType.FloatLiteral)
             };
 
         public Token? StringValue() =>
@@ -255,7 +238,7 @@ namespace Caylang.Assembler
                     '0' => Append('\0').Emit(),
                     _ => Transition(Start).Emit(TokenType.Error),
                 },
-                '"' => Skip().Transition(Start).EmitString(),
+                '"' => Skip().Transition(Start).ConsumeAndEmit(TokenType.StringLiteral),
                 '\n' => Transition(Start).Emit(TokenType.Error),
                 _ => Append().Emit()
             };
@@ -306,7 +289,7 @@ namespace Caylang.Assembler
                     "f32" => Transition(Start).Discard().Emit(TokenType.f32Type),
                     "f64" => Transition(Start).Discard().Emit(TokenType.f64Type),
                     "str" => Transition(Start).Discard().Emit(TokenType.StringType),
-                    _ => Transition(Start).EmitIdentifier()
+                    _ => Transition(Start).ConsumeAndEmit(TokenType.Identifier)
                 }
             };
 

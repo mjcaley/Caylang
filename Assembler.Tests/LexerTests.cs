@@ -250,7 +250,6 @@ namespace CayLang.Assembler.Tests
         [Theory]
         [InlineData("=", TokenType.Equal)]
         [InlineData(":", TokenType.Colon)]
-        [InlineData("-", TokenType.Negative)]
         public void StartReturnsToken(string input, TokenType type)
         {
             using var testInput = new StringReader(input);
@@ -458,9 +457,7 @@ namespace CayLang.Assembler.Tests
 
             Assert.NotNull(token);
             Assert.Equal(TokenType.IntegerLiteral, token?.Type);
-            Assert.IsType<IntegerToken>(token);
-            var i = token as IntegerToken;
-            Assert.Equal(1UL, i?.Value);
+            Assert.Equal("1", token?.Value);
             Assert.Empty(lexer.Lexeme.ToString());
             Assert.Equal(lexer.Start, lexer.Mode);
         }
@@ -515,9 +512,7 @@ namespace CayLang.Assembler.Tests
 
             Assert.NotNull(token);
             Assert.Equal(TokenType.IntegerLiteral, token?.Type);
-            Assert.IsType<IntegerToken>(token);
-            var i = token as IntegerToken;
-            Assert.Equal(42UL, i?.Value);
+            Assert.Equal("42", token?.Value);
             Assert.Equal(lexer.Start, lexer.Mode);
             Assert.Empty(lexer.Lexeme.ToString());
         }
@@ -555,9 +550,7 @@ namespace CayLang.Assembler.Tests
 
             Assert.NotNull(token);
             Assert.Equal(TokenType.IntegerLiteral, token?.Type);
-            Assert.IsType<IntegerToken>(token);
-            var i = token as IntegerToken;
-            Assert.Equal(5UL, i?.Value);
+            Assert.Equal("5", token?.Value);
             Assert.Empty(lexer.Lexeme.ToString());
             Assert.Equal(lexer.Start, lexer.Mode);
         }
@@ -602,9 +595,7 @@ namespace CayLang.Assembler.Tests
 
             Assert.NotNull(token);
             Assert.Equal(TokenType.FloatLiteral, token?.Type);
-            Assert.IsType<FloatToken>(token);
-            var f = token as FloatToken;
-            Assert.Equal(0.0m, f?.Value);
+            Assert.Equal("0.0", token?.Value);
             Assert.Empty(lexer.Lexeme.ToString());
             Assert.Equal(lexer.Start, lexer.Mode);
         }
@@ -637,9 +628,7 @@ namespace CayLang.Assembler.Tests
 
             Assert.NotNull(token);
             Assert.Equal(TokenType.StringLiteral, token?.Type);
-            Assert.IsType<StringToken>(token);
-            var s = token as StringToken;
-            Assert.Equal("a", s?.Value);
+            Assert.Equal("a", token?.Value);
             Assert.Empty(lexer.Lexeme.ToString());
             Assert.Equal(lexer.Start, lexer.Mode);
         }
@@ -655,9 +644,7 @@ namespace CayLang.Assembler.Tests
 
             Assert.NotNull(token);
             Assert.Equal(TokenType.StringLiteral, token?.Type);
-            Assert.IsType<StringToken>(token);
-            var s = token as StringToken;
-            Assert.Equal("", s?.Value);
+            Assert.Equal("", token?.Value);
             Assert.Empty(lexer.Lexeme.ToString());
             Assert.Equal(lexer.Start, lexer.Mode);
         }
@@ -779,8 +766,7 @@ namespace CayLang.Assembler.Tests
 
             Assert.NotNull(token);
             Assert.Equal(TokenType.Identifier, token?.Type);
-            var s = token as ValueToken<string>;
-            Assert.Equal("a", s?.Value);
+            Assert.Equal("a", token?.Value);
             Assert.Empty(lexer.Lexeme.ToString());
             Assert.Equal(' ', lexer.Current);
             Assert.Equal(lexer.Start, lexer.Mode);
