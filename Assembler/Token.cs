@@ -75,7 +75,7 @@ namespace CayLang.Assembler
 
     public class Token
     {
-        public Token(TokenType type, int line) => (Type, Line, Value) = (type, line, "");
+        public Token(TokenType type, int line) => (Type, Line, Value) = (type, line, string.Empty);
         public Token(TokenType type, int line, string value) => (Type, Line, Value) = (type, line, value);
 
         public TokenType Type { get; }
