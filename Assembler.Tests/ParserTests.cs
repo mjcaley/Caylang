@@ -9,6 +9,14 @@ namespace CayLang.Assembler.Tests
     public class ParserTests
     {
         private static Token Eof { get; } = new Token(TokenType.EndOfFile, 10);
+
+        [Fact]
+        public void ParserStartsWithInitializedErrors()
+        {
+            var parser = new Parser(Array.Empty<Token>());
+            
+            Assert.Empty(parser.Errors);
+        }
         
         [Theory]
         [InlineData(TokenType.Halt, Instruction.Halt)]
