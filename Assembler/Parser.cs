@@ -134,7 +134,7 @@ namespace Caylang.Assembler
             }
         }
         
-        public NullaryInstruction ParseNullaryInstruction()
+        private NullaryInstruction ParseNullaryInstruction()
         {
             var line = Current?.Line ?? 0;
 
@@ -162,7 +162,7 @@ namespace Caylang.Assembler
             return new NullaryInstruction(instruction, type, line);
         }
 
-        public UnaryInstruction ParseUnaryInstruction()
+        private UnaryInstruction ParseUnaryInstruction()
         {
             var line = Current?.Line ?? 0;
 
@@ -183,7 +183,7 @@ namespace Caylang.Assembler
             };
             Advance();
 
-            InstructionType type = ParseInstructionType();
+            var type = ParseInstructionType();
             var operand = ParseOperand();
             
             return new UnaryInstruction(instruction, type, operand, line);

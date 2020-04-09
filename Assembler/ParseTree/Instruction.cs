@@ -49,28 +49,27 @@ namespace Caylang.Assembler.ParseTree
 		StField
 	}
 
-	public class InstructionStatement
+	public abstract class InstructionStatement
 	{
-		public InstructionStatement(Instruction instruction, int line) => (Instruction, Line) = (instruction, line);
+		protected InstructionStatement(Instruction instruction, InstructionType returnType, int line) =>
+			(Instruction, ReturnType, Line) = (instruction, returnType, line);
 
 		public Instruction Instruction { get; }
+		public InstructionType ReturnType { get; }
 		public int Line { get; }
 	}
 
 	public class NullaryInstruction : InstructionStatement
 	{
-		public NullaryInstruction(Instruction instruction, InstructionType returnType, int line) : base(instruction, line) =>
-			ReturnType = returnType;
-
-		public InstructionType ReturnType { get; }
+		public NullaryInstruction(Instruction instruction, InstructionType returnType, int line) :
+			base(instruction, returnType, line) { }
 	}
 
 	public class UnaryInstruction : InstructionStatement
 	{
-		public UnaryInstruction(Instruction instruction, InstructionType returnType, Operand first, int line) : base(instruction, line) =>
-			(ReturnType, First) = (returnType, first);
+		public UnaryInstruction(Instruction instruction, InstructionType returnType, Operand first, int line) :
+			base(instruction, returnType, line) => First = first;
 
-		public InstructionType ReturnType { get; }
 		public Operand First { get; }
 	}
 }
