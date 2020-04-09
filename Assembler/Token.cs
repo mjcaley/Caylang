@@ -39,6 +39,7 @@ namespace CayLang.Assembler
         NewStruct,
         LoadField,
         StoreField,
+        NewArray,
 
         // Types
         PointerType,
@@ -74,11 +75,11 @@ namespace CayLang.Assembler
 
     public class Token
     {
-        public Token(TokenType type, int line) => (Type, Line) = (type, line);
+        public Token(TokenType type, int line) => (Type, Line, Value) = (type, line, "");
         public Token(TokenType type, int line, string value) => (Type, Line, Value) = (type, line, value);
 
         public TokenType Type { get; }
         public int Line { get; }
-        public string? Value { get; }
+        public string Value { get; }
     }
 }

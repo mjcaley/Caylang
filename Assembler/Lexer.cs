@@ -277,6 +277,7 @@ namespace Caylang.Assembler
                     "newstruct" => Transition(Start).Discard().Emit(TokenType.NewStruct),
                     "ldfield" => Transition(Start).Discard().Emit(TokenType.LoadField),
                     "stfield" => Transition(Start).Discard().Emit(TokenType.StoreField),
+                    "newarray" => Transition(Start).Discard().Emit(TokenType.NewArray),
                     "addr" => Transition(Start).Discard().Emit(TokenType.AddressType),
                     "i8" => Transition(Start).Discard().Emit(TokenType.i8Type),
                     "u8" => Transition(Start).Discard().Emit(TokenType.u8Type),

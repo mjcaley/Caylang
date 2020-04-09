@@ -17,11 +17,13 @@ namespace Caylang.Assembler.ParseTree
 		UInteger64,
 		FloatingPoint32,
 		FloatingPoint64,
+		Address
 	}
 
 	public enum Instruction
 	{
 		Halt,
+		Noop,
 		Pop,
 		Add,
 		Sub,

@@ -4,7 +4,27 @@ using System.Text;
 
 namespace Caylang.Assembler.ParseTree
 {
-	public class Literal { }
+	public abstract class Literal { }
+
+	#region AST literals
+
+	public class ASTLiteral : Literal
+	{
+		public ASTLiteral(string value) => Value = value;
+
+		public string Value { get; }
+	}
+
+	public class IntegerLiteral : ASTLiteral
+	{
+		public IntegerLiteral(string value) : base(value) { }
+	}
+
+	public class FloatLiteral : ASTLiteral
+	{
+		public FloatLiteral(string value) : base(value) { }
+	}
+	#endregion
 
 	public class VoidLiteral : Literal
 	{
