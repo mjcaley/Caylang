@@ -66,12 +66,9 @@ namespace Caylang.Assembler
 
         private void SkipTo(params TokenType[] type)
         {
-            while (Current != null)
+            while (Current != null && type.Contains(Current.Type))
             {
-                if (!type.Contains(Current.Type))
-                {
-                    Advance();
-                }
+                Advance();
             }
         }
 
@@ -80,23 +77,49 @@ namespace Caylang.Assembler
             return null;
         }
 
-        public List<InstructionStatement> ParseInstructions()
+        public List<Statement> ParseStatements()
         {
-            var instructions = new List<InstructionStatement>();
-            while (Current != null)
+            var instructions = new List<Statement>();
+            
+            try
             {
-                try
+                while (Current?.Type != TokenType.EndOfFile)
                 {
-                    instructions.Add(ParseInstruction());
+                    if (Current?.Type == TokenType.Identifier)
+                    {
+                        instructions.Add(ParseLabel());
+                    }
+                    else
+                    {
+                        instructions.Add(ParseInstruction());
+                    }
                 }
-                catch (ParserException e)
-                {
-                    Errors.Add(e);
-                    SkipTo(TokenType.EndOfFile, TokenType.Func, TokenType.Define);
-                }
+            }
+            catch (ParserException e)
+            {
+                Errors.Add(e);
+                SkipTo(TokenType.EndOfFile, TokenType.Func, TokenType.Define);
             }
 
             return instructions;
+        }
+
+        public LabelStatement ParseLabel()
+        {
+            if (Current?.Type == TokenType.Identifier && Next?.Type == TokenType.Colon)
+            {
+                var line = Current.Line;
+                var name = Current.Value;
+                
+                Advance();
+                Advance();
+                
+                return new LabelStatement(name, line);
+            }
+            else
+            {
+                throw new UnexpectedTokenException(Current);
+            }
         }
 
         public InstructionStatement ParseInstruction()

@@ -17,6 +17,90 @@ namespace CayLang.Assembler.Tests
             
             Assert.Empty(parser.Errors);
         }
+
+        [Fact]
+        public void ParseStatementsParsesLabel()
+        {
+            var parser = new Parser(new[]
+            {
+                new Token(TokenType.Identifier, 1, "label"),
+                new Token(TokenType.Colon, 2),
+                Eof
+            });
+            var result = parser.ParseStatements();
+            
+            Assert.NotEmpty(result);
+            Assert.IsType<LabelStatement>(result[0]);
+        }
+
+        [Fact]
+        public void ParseStatementsParsesNullaryInstruction()
+        {
+            var parser = new Parser(new[]
+            {
+                new Token(TokenType.Halt, 1),
+                Eof
+            });
+            var result = parser.ParseStatements();
+            
+            Assert.NotEmpty(result);
+            Assert.IsType<NullaryInstruction>(result[0]);
+        }
+
+        [Fact]
+        public void ParseStatementsParsesUnaryInstruction()
+        {
+            var parser = new Parser(new[]
+            {
+                new Token(TokenType.CallFunc, 1),
+                new Token(TokenType.IntegerLiteral, 3, "42"),
+                new Token(TokenType.i8Type, 4),
+                Eof
+            });
+            var result = parser.ParseStatements();
+            
+            Assert.NotEmpty(result);
+            Assert.IsType<UnaryInstruction>(result[0]);
+        }
+
+        [Fact]
+        public void ParseStatementsParsesCollection()
+        {
+            var parser = new Parser(new[]
+            {
+                new Token(TokenType.Identifier, 1, "start"),
+                new Token(TokenType.Colon, 2),
+                new Token(TokenType.Noop, 3),
+                new Token(TokenType.Halt, 4) 
+            });
+            var result = parser.ParseStatements();
+            
+            Assert.Equal(3, result.Count);
+        }
+
+        [Fact]
+        public void ParseLabel()
+        {
+            var parser = new Parser(new[]
+            {
+                new Token(TokenType.Identifier, 1, "label"),
+                new Token(TokenType.Colon, 2),
+                Eof
+            });
+            var result = parser.ParseLabel();
+            
+            Assert.Equal("label", result.Label);
+            Assert.Equal(1, result.Line);
+            Assert.Same(Eof, parser.Current);
+        }
+
+        [Fact]
+        public void ParserLabelThrows()
+        {
+            var parser = new Parser(new[] { Eof });
+            
+            Assert.Throws<UnexpectedTokenException>(() => parser.ParseLabel());
+        }
         
         [Theory]
         [InlineData(TokenType.Halt, Instruction.Halt)]
