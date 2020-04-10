@@ -19,6 +19,56 @@ namespace CayLang.Assembler.Tests
         }
 
         [Fact]
+        public void ParsesFunction()
+        {
+            var parser = new Parser(new[]
+            {
+                new Token(TokenType.Func, 1),
+                new Token(TokenType.Identifier, 2, "name"),
+                new Token(TokenType.Locals, 3),
+                new Token(TokenType.Equal, 4),
+                new Token(TokenType.IntegerLiteral, 5, "1"),
+                new Token(TokenType.Args, 6),
+                new Token(TokenType.Equal, 7),
+                new Token(TokenType.IntegerLiteral, 8, "2"),
+                Eof
+            });
+            var result = parser.ParseFunction();
+            
+            Assert.Equal("name", result.Name);
+            Assert.Equal(1, result.Locals);
+            Assert.Equal(2, result.Arguments);
+            Assert.Empty(result.Statements);
+        }
+
+        [Fact]
+        public void ParseFunctionWithStatements()
+        {
+            var parser = new Parser(new[]
+            {
+                new Token(TokenType.Func, 1), 
+                new Token(TokenType.Identifier, 2, "name"),
+                new Token(TokenType.Locals, 6),
+                new Token(TokenType.Equal, 7),
+                new Token(TokenType.IntegerLiteral, 8, "0"),
+                new Token(TokenType.Args, 3),
+                new Token(TokenType.Equal, 4),
+                new Token(TokenType.IntegerLiteral, 5, "0"),
+                new Token(TokenType.Identifier, 9, "label"),
+                new Token(TokenType.Colon, 10),
+                new Token(TokenType.Noop, 11), 
+                new Token(TokenType.Return, 12), 
+                Eof
+            });
+            var result = parser.ParseFunction();
+            
+            Assert.Equal(3, result.Statements.Count);
+            Assert.IsType<LabelStatement>(result.Statements[0]);
+            Assert.IsType<NullaryInstruction>(result.Statements[1]);
+            Assert.IsType<NullaryInstruction>(result.Statements[2]);
+        }
+
+        [Fact]
         public void ParseStatementsParsesLabel()
         {
             var parser = new Parser(new[]

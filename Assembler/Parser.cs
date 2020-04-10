@@ -12,6 +12,10 @@ namespace Caylang.Assembler
 {
     public class ParserException : Exception
     {
+        public ParserException()
+        {
+        }
+
         public ParserException(string message) : base(message)
         {
         }
@@ -32,7 +36,16 @@ namespace Caylang.Assembler
         public Token? FoundToken { get; }
     }
 
-	public class Parser
+    public class IntegerConversionException : ParserException
+    {
+        public IntegerConversionException() => At = null;
+        
+        public IntegerConversionException(Token? token) => At = token;
+
+        public Token? At { get; }
+    }
+
+    public class Parser
 	{
         private readonly IEnumerator<Token> tokens;
 
@@ -64,11 +77,36 @@ namespace Caylang.Assembler
             }
         }
 
-        private void SkipTo(params TokenType[] type)
+        private void SkipTo(params TokenType[] types)
         {
-            while (Current != null && type.Contains(Current.Type))
+            while (Current != null && types.Contains(Current.Type))
             {
                 Advance();
+            }
+        }
+
+        private bool Match(params TokenType[] types)
+        {
+            if (Current != null)
+            {
+                return types.Contains(Current.Type);
+            }
+
+            return false;
+        }
+
+        private Token Expect(TokenType type)
+        {
+            if (Current?.Type == type)
+            {
+                var token = Current;
+                Advance();
+                
+                return token;
+            }
+            else
+            {
+                throw new UnexpectedTokenException(Current);
             }
         }
 
@@ -77,13 +115,49 @@ namespace Caylang.Assembler
             return null;
         }
 
+        public Function ParseFunction()
+        {
+            var line = Current?.Line ?? 0;
+
+            Expect(TokenType.Func);
+            var name = Expect(TokenType.Identifier).Value;
+
+            Expect(TokenType.Locals);
+            Expect(TokenType.Equal);
+            int locals;
+            {
+                var localToken = Expect(TokenType.IntegerLiteral);
+                var localResult = int.TryParse(localToken.Value, out locals);
+                if (!localResult)
+                {
+                    throw new IntegerConversionException(localToken);
+                }
+            }
+            
+            Expect(TokenType.Args);
+            Expect(TokenType.Equal);
+            int args;
+            {
+                var argToken = Expect(TokenType.IntegerLiteral);
+                var argsResult = int.TryParse(argToken.Value, out args);
+                if (!argsResult)
+                {
+                    throw new IntegerConversionException(argToken);
+                }
+            }
+
+            var statements = ParseStatements();
+            
+            return new Function(name, locals, args, line, statements);
+        }
+        
         public List<Statement> ParseStatements()
         {
             var instructions = new List<Statement>();
             
             try
             {
-                while (Current?.Type != TokenType.EndOfFile)
+                while (!Match(TokenType.EndOfFile, TokenType.Func, TokenType.Define))
                 {
                     if (Current?.Type == TokenType.Identifier)
                     {
