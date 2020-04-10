@@ -68,6 +68,27 @@ namespace CayLang.Assembler.Tests
             Assert.IsType<NullaryInstruction>(result.Statements[2]);
         }
 
+        [Theory]
+        [InlineData("a", "1")]
+        [InlineData("1", "a")]
+        public void ParseFunctionThrowsIntegerConversionException(string argsInput, string localsInput)
+        {
+            var parser = new Parser(new[]
+            {
+                new Token(TokenType.Func, 1),
+                new Token(TokenType.Identifier, 2, "name"),
+                new Token(TokenType.Locals, 2),
+                new Token(TokenType.Equal, 2),
+                new Token(TokenType.IntegerLiteral, 2, localsInput),
+                new Token(TokenType.Args, 2),
+                new Token(TokenType.Equal, 2),
+                new Token(TokenType.IntegerLiteral, 2, argsInput),
+                Eof
+            });
+
+            Assert.Throws<IntegerConversionException>(() => parser.ParseFunction());
+        }
+
         [Fact]
         public void ParseStatementsParsesLabel()
         {
