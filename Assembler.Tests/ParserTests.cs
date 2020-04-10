@@ -47,6 +47,22 @@ namespace CayLang.Assembler.Tests
         }
 
         [Fact]
+        public void StartRuleLogsError()
+        {
+            var testInput = new Token(TokenType.IntegerLiteral, 1, "42");
+            var parser = new Parser(new[]
+            {
+                testInput,
+                Eof
+            });
+            var result = parser.Start();
+
+            Assert.IsType<UnexpectedTokenException>(parser.Errors[0]);
+            var error = parser.Errors[0] as UnexpectedTokenException;
+            Assert.Same(testInput, error?.FoundToken);
+        }
+
+        [Fact]
         public void ParsesDefinition()
         {
             var parser = new Parser(new[]

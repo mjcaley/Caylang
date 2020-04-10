@@ -79,7 +79,7 @@ namespace Caylang.Assembler
 
         private void SkipTo(params TokenType[] types)
         {
-            while (Current != null && types.Contains(Current.Type))
+            while (Current != null && !types.Contains(Current.Type))
             {
                 Advance();
             }
