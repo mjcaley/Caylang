@@ -19,6 +19,53 @@ namespace CayLang.Assembler.Tests
         }
 
         [Fact]
+        public void StartRule()
+        {
+            var parser = new Parser(new[]
+            {
+                new Token(TokenType.Define, 1),
+                new Token(TokenType.Identifier, 2, "constant"),
+                new Token(TokenType.Equal, 3),
+                new Token(TokenType.IntegerLiteral, 4, "42"),
+                new Token(TokenType.i8Type, 5),
+                
+                new Token(TokenType.Func, 6),
+                new Token(TokenType.Identifier, 7, "function"),
+                new Token(TokenType.Locals, 8),
+                new Token(TokenType.Equal, 9), 
+                new Token(TokenType.IntegerLiteral, 10, "1"),
+                new Token(TokenType.Args, 11),
+                new Token(TokenType.Equal, 12),
+                new Token(TokenType.IntegerLiteral, 13, "0"),
+                new Token(TokenType.Return, 14),
+                Eof
+            });
+            var result = parser.Start();
+            
+            Assert.NotEmpty(result.Definitions);
+            Assert.NotEmpty(result.Functions);
+        }
+
+        [Fact]
+        public void ParsesDefinition()
+        {
+            var parser = new Parser(new[]
+            {
+                new Token(TokenType.Define, 1),
+                new Token(TokenType.Identifier, 2, "constant"),
+                new Token(TokenType.Equal, 3),
+                new Token(TokenType.IntegerLiteral, 4, "42"),
+                new Token(TokenType.i8Type, 5),
+                Eof
+            });
+            var result = parser.ParseDefinition();
+            
+            Assert.Equal(1, result.Line);
+            Assert.Equal("constant", result.Name);
+            Assert.IsType<Operand>(result.Value);
+        }
+
+        [Fact]
         public void ParsesFunction()
         {
             var parser = new Parser(new[]

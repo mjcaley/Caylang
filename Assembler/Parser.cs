@@ -112,7 +112,38 @@ namespace Caylang.Assembler
 
         public Tree Start()
         {
-            return null;
+            var tree = new Tree();
+
+            while (!Match(TokenType.EndOfFile))
+            {
+                if (Match(TokenType.Func))
+                {
+                    tree.Functions.Add(ParseFunction());
+                }
+                else if (Match(TokenType.Define))
+                {
+                    tree.Definitions.Add(ParseDefinition());
+                }
+                else
+                {
+                    Errors.Add(new UnexpectedTokenException(Current));
+                    SkipTo(TokenType.Func, TokenType.Define, TokenType.EndOfFile);
+                }
+            }
+
+            return tree;
+        }
+
+        public Definition ParseDefinition()
+        {
+            var line = Current?.Line ?? 0;
+
+            Expect(TokenType.Define);
+            var name = Expect(TokenType.Identifier).Value;
+            Expect(TokenType.Equal);
+            var operand = ParseOperand();
+            
+            return new Definition(name, operand, line);
         }
 
         public Function ParseFunction()
