@@ -4,7 +4,7 @@ using Caylang.Assembler;
 using Caylang.Assembler.ParseTree;
 using Xunit;
 
-namespace CayLang.Assembler.Tests
+namespace Caylang.Assembler.Tests
 {
     public class ParserTests
     {

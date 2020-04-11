@@ -6,7 +6,7 @@ using System.Text;
 using Caylang.Assembler;
 using Xunit;
 
-namespace CayLang.Assembler.Tests
+namespace Caylang.Assembler.Tests
 {
     public class LexerTests
     {

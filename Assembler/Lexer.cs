@@ -3,9 +3,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Text;
-using CayLang.Assembler;
-using Microsoft.VisualBasic.CompilerServices;
-
 
 namespace Caylang.Assembler
 {

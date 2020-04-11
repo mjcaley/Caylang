@@ -1,7 +1,7 @@
 ﻿using System;
 using Caylang.Assembler;
 
-namespace CayLang.Assembler
+namespace Caylang.Assembler
 {
     public enum TokenType
     {
