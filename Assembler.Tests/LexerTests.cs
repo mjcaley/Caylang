@@ -259,6 +259,7 @@ namespace CayLang.Assembler.Tests
             Assert.Equal(type, token?.Type);
             Assert.Equal(1, token?.Line);
             Assert.Equal(lexer.Start, lexer.Mode);
+            Assert.NotEqual(input?[0], lexer.Current);
         }
 
         [Fact]
@@ -348,6 +349,18 @@ namespace CayLang.Assembler.Tests
             Assert.NotNull(token);
             Assert.Equal(TokenType.Error, token?.Type);
             Assert.Empty(lexer.Lexeme.ToString());
+        }
+
+        [Fact]
+        public void StartTransitionsToEnd()
+        {
+            using var testInput = new StringReader("");
+            var lexer = new Lexer(testInput);
+            var token = lexer.Start();
+            
+            Assert.Null(token);
+            Assert.Empty(lexer.Lexeme.ToString());
+            Assert.Equal(lexer.End, lexer.Mode);
         }
         #endregion
 

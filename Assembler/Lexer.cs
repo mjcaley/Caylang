@@ -157,8 +157,8 @@ namespace Caylang.Assembler
             Current switch
             {
                 var _ when char.IsWhiteSpace(Current) => Transition(SkipWhitespace).Emit(),
-                '=' => Discard().Emit(TokenType.Equal),
-                ':' => Discard().Emit(TokenType.Colon),
+                '=' => Skip().Emit(TokenType.Equal),
+                ':' => Skip().Emit(TokenType.Colon),
                 '-' => Append().Transition(NumberBase).Emit(),
                 '.' => ReplaceLexeme((_) => "0").Append().Transition(FloatNumber).Emit(),
                 '0' => Append().Transition(NumberBase).Emit(),
@@ -318,7 +318,7 @@ namespace Caylang.Assembler
 
             while (state.Mode != null)
             {
-                state.Mode();
+                state.Mode()?.AddTo(tokens);
             }
 
             return tokens;
