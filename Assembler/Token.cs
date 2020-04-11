@@ -81,5 +81,10 @@ namespace Caylang.Assembler
         public TokenType Type { get; }
         public int Line { get; }
         public string Value { get; }
+
+        public override string ToString()
+        {
+            return $"Caylang.Assembler.Token(Type={Type.ToString()}, Line={Line.ToString()}, Value={Value})";
+        }
     }
 }
