@@ -405,11 +405,36 @@ namespace Caylang.Assembler.Tests
         }
 
         [Fact]
-        public void NumberBaseEmitsErrorTokenOnUnexpectedInput()
+        public void NumberBaseEmitsIntegerTokenOnZero()
         {
-            using var testInput = new StringReader("01");
+            using var testInput = new StringReader("0");
             var lexer = new Lexer(testInput);
-            lexer.Advance();
+            lexer.Append();
+            var token = lexer.NumberBase();
+            
+            Assert.NotNull(token);
+            Assert.Equal(TokenType.IntegerLiteral, token.Type);
+            Assert.Equal("0", token.Value);
+            Assert.Equal(lexer.Start, lexer.Mode);
+            Assert.NotEqual('0', lexer.Current);
+            Assert.Empty(lexer.Lexeme.ToString());
+        }
+
+        [Theory]
+        [InlineData('1')]
+        [InlineData('2')]
+        [InlineData('3')]
+        [InlineData('4')]
+        [InlineData('5')]
+        [InlineData('6')]
+        [InlineData('7')]
+        [InlineData('8')]
+        [InlineData('9')]
+        public void NumberBaseEmitsErrorTokenOnUnexpectedInput(char input)
+        {
+            using var testInput = new StringReader("0" + input);
+            var lexer = new Lexer(testInput);
+            lexer.Append();
             var token = lexer.NumberBase();
 
             Assert.NotNull(token);

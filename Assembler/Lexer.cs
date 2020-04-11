@@ -174,6 +174,10 @@ namespace Caylang.Assembler
                 'x' => Skip().Discard().Transition(HexNumber).Emit(),
                 'b' => Skip().Discard().Transition(BinNumber).Emit(),
                 '.' => Append().Transition(FloatNumber).Emit(),
+                '\0' => Transition(Start).ConsumeAndEmit(TokenType.IntegerLiteral),
+                var x when
+                    char.IsWhiteSpace(x) ||
+                    char.IsControl(x) => Transition(Start).ConsumeAndEmit(TokenType.IntegerLiteral),
                 _ => Append().Discard().Transition(Start).Emit(TokenType.Error)
             };
 
