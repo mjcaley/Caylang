@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Caylang.Assembler;
 using Caylang.Assembler.ParseTree;
+using Newtonsoft.Json.Serialization;
 using Xunit;
 
 namespace Caylang.Assembler.Tests
@@ -9,14 +10,6 @@ namespace Caylang.Assembler.Tests
     public class ParserTests
     {
         private static Token Eof { get; } = new Token(TokenType.EndOfFile, 10);
-
-        [Fact]
-        public void ParserStartsWithInitializedErrors()
-        {
-            var parser = new Parser(Array.Empty<Token>());
-            
-            Assert.Empty(parser.Errors);
-        }
 
         [Fact]
         public void StartRule()
@@ -27,7 +20,7 @@ namespace Caylang.Assembler.Tests
                 new Token(TokenType.Identifier, 2, "constant"),
                 new Token(TokenType.Equal, 3),
                 new Token(TokenType.IntegerLiteral, 4, "42"),
-                new Token(TokenType.i8Type, 5),
+                new Token(TokenType.Integer8Type, 5),
                 
                 new Token(TokenType.Func, 6),
                 new Token(TokenType.Identifier, 7, "function"),
@@ -41,9 +34,11 @@ namespace Caylang.Assembler.Tests
                 Eof
             });
             var result = parser.Start();
-            
-            Assert.NotEmpty(result.Definitions);
-            Assert.NotEmpty(result.Functions);
+
+            Assert.IsType<Tree>(result);
+            var tree = result as Tree;
+            Assert.NotEmpty(tree?.Definitions);
+            Assert.NotEmpty(tree?.Functions);
         }
 
         [Fact]
@@ -57,66 +52,79 @@ namespace Caylang.Assembler.Tests
             });
             var result = parser.Start();
 
-            Assert.IsType<UnexpectedTokenException>(parser.Errors[0]);
-            var error = parser.Errors[0] as UnexpectedTokenException;
-            Assert.Same(testInput, error?.FoundToken);
+            Assert.IsType<Tree>(result);
+            Assert.Single(result.Children);
+            Assert.IsType<UnexpectedTokenError>(result.Children[0]);
         }
 
         [Fact]
         public void ParsesDefinition()
         {
+            var constant = new Token(TokenType.Identifier, 2, "constant");
+            
             var parser = new Parser(new[]
             {
                 new Token(TokenType.Define, 1),
-                new Token(TokenType.Identifier, 2, "constant"),
+                constant,
                 new Token(TokenType.Equal, 3),
                 new Token(TokenType.IntegerLiteral, 4, "42"),
-                new Token(TokenType.i8Type, 5),
+                new Token(TokenType.Integer8Type, 5),
                 Eof
             });
             var result = parser.ParseDefinition();
-            
-            Assert.Equal(1, result.Line);
-            Assert.Equal("constant", result.Name);
-            Assert.IsType<Operand>(result.Value);
+
+            Assert.IsType<Definition>(result);
+            var definition = result as Definition;
+            Assert.Equal(definition?.Name, constant);
+            Assert.IsType<Integer8Literal>(definition?.Value);
         }
 
         [Fact]
         public void ParsesFunction()
         {
+            var name = new Token(TokenType.Identifier, 2, "name");
+            var one = new Token(TokenType.IntegerLiteral, 5, "1");
+            var two = new Token(TokenType.IntegerLiteral, 8, "2");
+            
             var parser = new Parser(new[]
             {
                 new Token(TokenType.Func, 1),
-                new Token(TokenType.Identifier, 2, "name"),
+                name,
                 new Token(TokenType.Locals, 3),
                 new Token(TokenType.Equal, 4),
-                new Token(TokenType.IntegerLiteral, 5, "1"),
+                one,
                 new Token(TokenType.Args, 6),
                 new Token(TokenType.Equal, 7),
-                new Token(TokenType.IntegerLiteral, 8, "2"),
+                two,
                 Eof
             });
             var result = parser.ParseFunction();
-            
-            Assert.Equal("name", result.Name);
-            Assert.Equal(1, result.Locals);
-            Assert.Equal(2, result.Arguments);
-            Assert.Empty(result.Statements);
+
+            Assert.IsType<FunctionNode>(result);
+            var function = result as FunctionNode;
+            Assert.Equal(name, function?.Name);
+            Assert.Equal(one, function?.Locals);
+            Assert.Equal(two, function?.Arguments);
+            Assert.Empty(function?.Statements);
         }
 
         [Fact]
         public void ParseFunctionWithStatements()
         {
+            var name = new Token(TokenType.Identifier, 2, "name");
+            var localsZero = new Token(TokenType.IntegerLiteral, 5, "0");
+            var argsZero = new Token(TokenType.IntegerLiteral, 8, "0");
+
             var parser = new Parser(new[]
             {
                 new Token(TokenType.Func, 1), 
-                new Token(TokenType.Identifier, 2, "name"),
-                new Token(TokenType.Locals, 6),
-                new Token(TokenType.Equal, 7),
-                new Token(TokenType.IntegerLiteral, 8, "0"),
-                new Token(TokenType.Args, 3),
+                name,
+                new Token(TokenType.Locals, 3),
                 new Token(TokenType.Equal, 4),
-                new Token(TokenType.IntegerLiteral, 5, "0"),
+                localsZero,
+                new Token(TokenType.Args, 6),
+                new Token(TokenType.Equal, 7),
+                argsZero,
                 new Token(TokenType.Identifier, 9, "label"),
                 new Token(TokenType.Colon, 10),
                 new Token(TokenType.Noop, 11), 
@@ -125,31 +133,14 @@ namespace Caylang.Assembler.Tests
             });
             var result = parser.ParseFunction();
             
-            Assert.Equal(3, result.Statements.Count);
-            Assert.IsType<LabelStatement>(result.Statements[0]);
-            Assert.IsType<NullaryInstruction>(result.Statements[1]);
-            Assert.IsType<NullaryInstruction>(result.Statements[2]);
-        }
-
-        [Theory]
-        [InlineData("a", "1")]
-        [InlineData("1", "a")]
-        public void ParseFunctionThrowsIntegerConversionException(string argsInput, string localsInput)
-        {
-            var parser = new Parser(new[]
-            {
-                new Token(TokenType.Func, 1),
-                new Token(TokenType.Identifier, 2, "name"),
-                new Token(TokenType.Locals, 2),
-                new Token(TokenType.Equal, 2),
-                new Token(TokenType.IntegerLiteral, 2, localsInput),
-                new Token(TokenType.Args, 2),
-                new Token(TokenType.Equal, 2),
-                new Token(TokenType.IntegerLiteral, 2, argsInput),
-                Eof
-            });
-
-            Assert.Throws<IntegerConversionException>(() => parser.ParseFunction());
+            Assert.IsType<FunctionNode>(result);
+            var function = result as FunctionNode;
+            Assert.Equal(name, function?.Name);
+            Assert.Equal(localsZero, function?.Locals);
+            Assert.Equal(argsZero, function?.Arguments);
+            
+            Assert.NotEmpty(function?.Statements);
+            Assert.Equal(3, result.Children.Count);
         }
 
         [Fact]
@@ -188,7 +179,7 @@ namespace Caylang.Assembler.Tests
             {
                 new Token(TokenType.CallFunc, 1),
                 new Token(TokenType.IntegerLiteral, 3, "42"),
-                new Token(TokenType.i8Type, 4),
+                new Token(TokenType.Integer8Type, 4),
                 Eof
             });
             var result = parser.ParseStatements();
@@ -205,7 +196,8 @@ namespace Caylang.Assembler.Tests
                 new Token(TokenType.Identifier, 1, "start"),
                 new Token(TokenType.Colon, 2),
                 new Token(TokenType.Noop, 3),
-                new Token(TokenType.Halt, 4) 
+                new Token(TokenType.Halt, 4),
+                Eof
             });
             var result = parser.ParseStatements();
             
@@ -213,255 +205,187 @@ namespace Caylang.Assembler.Tests
         }
 
         [Fact]
-        public void ParseLabel()
+        public void ParseStatementsReturnsError()
         {
+            var current = new Token(TokenType.IntegerLiteral, 1, "42");
+            var type = new Token(TokenType.Integer32Type, 2);
+            
             var parser = new Parser(new[]
             {
-                new Token(TokenType.Identifier, 1, "label"),
+                current,
+                type,
+                Eof
+            });
+            var result = parser.ParseStatements();
+
+            Assert.IsType<UnexpectedTokenError>(result[0]);
+            Assert.Single(result);
+            var error = result[0] as UnexpectedTokenError;
+            Assert.Equal(2, error?.Terminals.Count);
+            Assert.Equal(current, error?.Terminals[0]);
+            Assert.Equal(type, error?.Terminals[1]);
+        }
+
+        [Fact]
+        public void ParseLabel()
+        {
+            var name = new Token(TokenType.Identifier, 1, "label");
+
+            var parser = new Parser(new[]
+            {
+                name,
                 new Token(TokenType.Colon, 2),
                 Eof
             });
             var result = parser.ParseLabel();
-            
-            Assert.Equal("label", result.Label);
-            Assert.Equal(1, result.Line);
+
+            Assert.IsType<LabelStatement>(result);
+            var label = result as LabelStatement;
+            Assert.Equal(name, label?.Label);
             Assert.Same(Eof, parser.Current);
         }
 
         [Fact]
-        public void ParserLabelThrows()
+        public void ParserLabelReturnsErrorOnFirstToken()
         {
             var parser = new Parser(new[] { Eof });
-            
-            Assert.Throws<UnexpectedTokenException>(() => parser.ParseLabel());
+            var result = parser.ParseLabel();
+
+            Assert.IsType<UnexpectedTokenError>(result);
         }
-        
-        [Theory]
-        [InlineData(TokenType.Halt, Instruction.Halt)]
-        [InlineData(TokenType.Noop, Instruction.Noop)]
-        [InlineData(TokenType.Pop, Instruction.Pop)]
-        [InlineData(TokenType.Add, Instruction.Add)]
-        [InlineData(TokenType.Subtract, Instruction.Sub)]
-        [InlineData(TokenType.Multiply, Instruction.Mul)]
-        [InlineData(TokenType.Divide, Instruction.Div)]
-        [InlineData(TokenType.Modulo, Instruction.Mod)]
-        [InlineData(TokenType.TestEqual, Instruction.TestEQ)]
-        [InlineData(TokenType.TestNotEqual, Instruction.TestNE)]
-        [InlineData(TokenType.TestGreaterThan, Instruction.TestGT)]
-        [InlineData(TokenType.TestLessThan, Instruction.TestLT)]
-        [InlineData(TokenType.Return, Instruction.Ret)]
-        public void ParsesNullaryInstruction(TokenType testInput, Instruction expected)
+
+        [Fact]
+        public void ParserLabelReturnsErrorOnSecondToken()
         {
+            var label = new Token(TokenType.Identifier, 1, "label");
+
+            var parser = new Parser(new[] { 
+                label,
+                Eof
+            });
+            var result = parser.ParseLabel();
+
+            Assert.IsType<UnexpectedTokenError>(result);
+        }
+
+        [Theory]
+        [InlineData(TokenType.Halt)]
+        [InlineData(TokenType.Noop)]
+        [InlineData(TokenType.Pop)]
+        [InlineData(TokenType.Add)]
+        [InlineData(TokenType.Subtract)]
+        [InlineData(TokenType.Multiply)]
+        [InlineData(TokenType.Divide)]
+        [InlineData(TokenType.Modulo)]
+        [InlineData(TokenType.TestEqual)]
+        [InlineData(TokenType.TestNotEqual)]
+        [InlineData(TokenType.TestGreaterThan)]
+        [InlineData(TokenType.TestLessThan)]
+        [InlineData(TokenType.Return)]
+        public void ParsesNullaryInstruction(TokenType testInput)
+        {
+            var instruction = new Token(testInput, 1);
+            var returnType = new Token(TokenType.Integer8Type, 2);
+
             var parser = new Parser(new[]
             {
-                new Token(testInput, 1),
+                instruction,
+                returnType,
                 Eof
             });
             var result = parser.ParseInstruction();
             
             Assert.IsType<NullaryInstruction>(result);
-            Assert.Equal(expected, result.Instruction);
-            Assert.Equal(1, result.Line);
-            Assert.Same(Eof, parser.Current);
+            var statement = result as NullaryInstruction;
+            Assert.Equal(instruction, statement?.Instruction);
+            Assert.Equal(returnType, statement?.ReturnType);
+            Assert.Equal(Eof, parser.Current);
         }
 
         [Theory]
-        [InlineData(TokenType.LoadConst, Instruction.LdConst)]
-        [InlineData(TokenType.LoadLocal, Instruction.LdLocal)]
-        [InlineData(TokenType.StoreLocal, Instruction.StLocal)]
-        [InlineData(TokenType.Jump, Instruction.Jmp)]
-        [InlineData(TokenType.JumpTrue, Instruction.JmpT)]
-        [InlineData(TokenType.JumpFalse, Instruction.JmpF)]
-        [InlineData(TokenType.NewStruct, Instruction.NewStruct)]
-        [InlineData(TokenType.NewArray, Instruction.NewArray)]
-        [InlineData(TokenType.CallFunc, Instruction.CallFunc)]
-        [InlineData(TokenType.LoadField, Instruction.LdField)]
-        [InlineData(TokenType.StoreField, Instruction.StField)]
-        public void ParsesUnaryInstruction(TokenType testInput, Instruction expected)
+        [InlineData(TokenType.LoadConst)]
+        [InlineData(TokenType.LoadLocal)]
+        [InlineData(TokenType.StoreLocal)]
+        [InlineData(TokenType.Jump)]
+        [InlineData(TokenType.JumpTrue)]
+        [InlineData(TokenType.JumpFalse)]
+        [InlineData(TokenType.NewStruct)]
+        [InlineData(TokenType.NewArray)]
+        [InlineData(TokenType.CallFunc)]
+        [InlineData(TokenType.LoadField)]
+        [InlineData(TokenType.StoreField)]
+        public void ParsesUnaryInstruction(TokenType testInput)
         {
+            var instruction = new Token(testInput, 1);
+            var returnType = new Token(TokenType.UInteger64Type, 2);
+            var operand = new Token(TokenType.IntegerLiteral, 3, "0");
+
             var parser = new Parser(new[]
             {
-                new Token(testInput, 1),
-                new Token(TokenType.Identifier, 2, "ident"),
+                instruction,
+                returnType,
+                operand,
+                new Token(TokenType.Integer8Type, 3),
                 Eof
             });
             var result = parser.ParseInstruction();
-            
+
             Assert.IsType<UnaryInstruction>(result);
-            Assert.Equal(expected, result.Instruction);
-            Assert.Equal(1, result.Line);
-            var unary = result as UnaryInstruction;
-            Assert.NotNull(unary?.First);
+            var statement = result as UnaryInstruction;
+            Assert.Equal(instruction, statement?.Instruction);
+            Assert.Equal(returnType, statement?.ReturnType);
+            Assert.Single(result.Children);
             Assert.Same(Eof, parser.Current);
         }
 
-        [Theory]
-        [InlineData(TokenType.i8Type, InstructionType.Integer8)]
-        [InlineData(TokenType.u8Type, InstructionType.UInteger8)]
-        [InlineData(TokenType.i16Type, InstructionType.Integer16)]
-        [InlineData(TokenType.u16Type, InstructionType.UInteger16)]
-        [InlineData(TokenType.i32Type, InstructionType.Integer32)]
-        [InlineData(TokenType.u32Type, InstructionType.UInteger32)]
-        [InlineData(TokenType.i64Type, InstructionType.Integer64)]
-        [InlineData(TokenType.u64Type, InstructionType.UInteger64)]
-        [InlineData(TokenType.f32Type, InstructionType.FloatingPoint32)]
-        [InlineData(TokenType.f64Type, InstructionType.FloatingPoint64)]
-        [InlineData(TokenType.AddressType, InstructionType.Address)]
-        public void ParseInstructionWithInstructionType(TokenType testInput, InstructionType expected)
+        [Fact]
+        public void ParsesUnaryInstructionReturnsError()
         {
+            var current = new Token(TokenType.IntegerLiteral, 1, "42");
+            var type = new Token(TokenType.Integer32Type, 2);
+            
+            var parser = new Parser(new[]
+            {
+                current,
+                type,
+                Eof
+            });
+            var result = parser.ParseInstruction();
+
+            Assert.IsType<UnexpectedTokenError>(result);
+            var error = result as UnexpectedTokenError;
+            Assert.Equal(2, error?.Terminals.Count);
+            Assert.Equal(current, error?.Terminals[0]);
+            Assert.Equal(type, error?.Terminals[1]);
+        }
+
+        [Theory]
+        [InlineData(TokenType.Integer8Type)]
+        [InlineData(TokenType.UInteger8Type)]
+        [InlineData(TokenType.Integer16Type)]
+        [InlineData(TokenType.UInteger16Type)]
+        [InlineData(TokenType.Integer32Type)]
+        [InlineData(TokenType.UInteger32Type)]
+        [InlineData(TokenType.Integer64Type)]
+        [InlineData(TokenType.UInteger64Type)]
+        [InlineData(TokenType.Float32Type)]
+        [InlineData(TokenType.Float64Type)]
+        [InlineData(TokenType.AddressType)]
+        public void ParseInstructionWithInstructionType(TokenType testInput)
+        {
+            var returnType = new Token(testInput, 2);
+
             var parser = new Parser(new[]
             {
                 new Token(TokenType.Add, 1),
-                new Token(testInput, 2), 
+                returnType,
                 Eof
             });
             var result = parser.ParseInstruction();
 
-            Assert.Equal(expected, result.ReturnType);
-        }
-
-        [Theory]
-        [InlineData(TokenType.i8Type, InstructionType.Integer8)]
-        [InlineData(TokenType.u8Type, InstructionType.UInteger8)]
-        [InlineData(TokenType.i16Type, InstructionType.Integer16)]
-        [InlineData(TokenType.u16Type, InstructionType.UInteger16)]
-        [InlineData(TokenType.i32Type, InstructionType.Integer32)]
-        [InlineData(TokenType.u32Type, InstructionType.UInteger32)]
-        [InlineData(TokenType.i64Type, InstructionType.Integer64)]
-        [InlineData(TokenType.u64Type, InstructionType.UInteger64)]
-        [InlineData(TokenType.f32Type, InstructionType.FloatingPoint32)]
-        [InlineData(TokenType.f64Type, InstructionType.FloatingPoint64)]
-        [InlineData(TokenType.AddressType, InstructionType.Address)]
-        public void ParseInstructionType(TokenType testInput, InstructionType expected)
-        {
-            var parser = new Parser(new[]
-            { 
-                new Token(testInput, 1), 
-                Eof
-            });
-            var result = parser.ParseInstructionType();
-            
-            Assert.Equal(expected, result);
-        }
-
-        [Fact]
-        public void ParseOperandWithIdentifierLiteral()
-        {
-            var parser = new Parser(new[]
-            {
-                new Token(TokenType.Identifier, 1, "ident"),
-                Eof
-            });
-            var result = parser.ParseOperand();
-            
-            Assert.Equal(1, result.Line);
-            Assert.Equal(OperandType.Unknown, result.Type);
-            Assert.IsType<IdentifierLiteral>(result.Value);
-            var literal = result.Value as IdentifierLiteral;
-            Assert.Equal("ident", literal?.Value);
-        }
-
-        [Fact]
-        public void ParseOperandWithStringLiteral()
-        {
-            var parser = new Parser(new[]
-            {
-                new Token(TokenType.StringLiteral, 1, "string"),
-                Eof
-            });
-            var result = parser.ParseOperand();
-            
-            Assert.Equal(1, result.Line);
-            Assert.Equal(OperandType.StringType, result.Type);
-            Assert.IsType<StringLiteral>(result.Value);
-            var literal = result.Value as StringLiteral;
-            Assert.Equal("string", literal?.Value);
-        }
-
-        [Fact]
-        public void ParseOperandWithIntegerLiteral()
-        {
-            var parser = new Parser(new[]
-            {
-                new Token(TokenType.IntegerLiteral, 1, "42"),
-                new Token(TokenType.i8Type, 2), 
-                Eof
-            });
-            var result = parser.ParseOperand();
-            
-            Assert.Equal(1, result.Line);
-            Assert.Equal(OperandType.Integer8, result.Type);
-            Assert.IsType<IntegerLiteral>(result.Value);
-            var literal = result.Value as IntegerLiteral;
-            Assert.Equal("42", literal?.Value);
-        }
-
-        [Fact]
-        public void ParseOperandWithFloatLiteral()
-        {
-            var parser = new Parser(new[]
-            {
-                new Token(TokenType.FloatLiteral, 1, "4.2"),
-                new Token(TokenType.f32Type, 2), 
-                Eof
-            });
-            var result = parser.ParseOperand();
-            
-            Assert.Equal(1, result.Line);
-            Assert.Equal(OperandType.FloatingPoint32, result.Type);
-            Assert.IsType<FloatLiteral>(result.Value);
-            var literal = result.Value as FloatLiteral;
-            Assert.Equal("4.2", literal?.Value);
-        }
-
-        [Theory]
-        [InlineData(TokenType.i8Type, OperandType.Integer8)]
-        [InlineData(TokenType.u8Type, OperandType.UInteger8)]
-        [InlineData(TokenType.i16Type, OperandType.Integer16)]
-        [InlineData(TokenType.u16Type, OperandType.UInteger16)]
-        [InlineData(TokenType.i32Type, OperandType.Integer32)]
-        [InlineData(TokenType.u32Type, OperandType.UInteger32)]
-        [InlineData(TokenType.i64Type, OperandType.Integer64)]
-        [InlineData(TokenType.u64Type, OperandType.UInteger64)]
-        [InlineData(TokenType.f32Type, OperandType.FloatingPoint32)]
-        [InlineData(TokenType.f64Type, OperandType.FloatingPoint64)]
-        [InlineData(TokenType.AddressType, OperandType.Address)]
-        public void ParseOperandWithType(TokenType testInput, OperandType expected)
-        {
-            var parser = new Parser(new[]
-            {
-                new Token(TokenType.IntegerLiteral, 1, "42"),
-                new Token(testInput, 2),
-                Eof
-            });
-            var result = parser.ParseOperand();
-            
-            Assert.Equal(expected, result.Type);
-        }
-
-        [Theory]
-        [InlineData(TokenType.i8Type, OperandType.Integer8)]
-        [InlineData(TokenType.u8Type, OperandType.UInteger8)]
-        [InlineData(TokenType.i16Type, OperandType.Integer16)]
-        [InlineData(TokenType.u16Type, OperandType.UInteger16)]
-        [InlineData(TokenType.i32Type, OperandType.Integer32)]
-        [InlineData(TokenType.u32Type, OperandType.UInteger32)]
-        [InlineData(TokenType.i64Type, OperandType.Integer64)]
-        [InlineData(TokenType.u64Type, OperandType.UInteger64)]
-        [InlineData(TokenType.f32Type, OperandType.FloatingPoint32)]
-        [InlineData(TokenType.f64Type, OperandType.FloatingPoint64)]
-        [InlineData(TokenType.AddressType, OperandType.Address)]
-        public void ParseOperandType(TokenType testInput, OperandType expected)
-        {
-            var parser = new Parser(new[]
-            {
-                new Token(testInput, 1),
-                Eof
-            });
-            var result = parser.ParseOperandType();
-            
-            Assert.Equal(expected, result);
-            Assert.Same(Eof, parser.Current);
+            Assert.IsType<NullaryInstruction>(result);
+            var statement = result as NullaryInstruction;
+            Assert.Equal(returnType, statement?.ReturnType);
         }
         
         [Fact]
@@ -481,35 +405,258 @@ namespace Caylang.Assembler.Tests
         }
 
         [Fact]
-        public void ParsesIntegerLiteral()
+        public void ParsesIdentifierLiteralReturnsError()
         {
+            var current = new Token(TokenType.IntegerLiteral, 1, "42");
+            
             var parser = new Parser(new[]
             {
-                new Token(TokenType.IntegerLiteral, 1, "42"),
+                current,
+                new Token(TokenType.Integer32Type, 5),
+                Eof
+            });
+            var result = parser.ParseStringLiteral();
+
+            Assert.IsType<UnexpectedTokenError>(result);
+            var error = result as UnexpectedTokenError;
+            Assert.Single(error?.Terminals);
+            Assert.Equal(current, error?.Terminals[0]);
+        }
+
+        [Fact]
+        public void ParsesInteger8Literal()
+        {
+            var fortyTwo = new Token(TokenType.IntegerLiteral, 1, "42");
+
+            var parser = new Parser(new[]
+            {
+                fortyTwo,
+                new Token(TokenType.Integer8Type, 2),
                 Eof
             });
             var result = parser.ParseLiteral();
 
-            Assert.IsType<IntegerLiteral>(result);
-            var literal = result as IntegerLiteral;
-            Assert.Equal("42", literal?.Value);
+            Assert.IsType<Integer8Literal>(result);
+            var literal = result as Integer8Literal;
+            Assert.Equal(fortyTwo, literal?.Atom);
             Assert.Same(Eof, parser.Current);
         }
 
         [Fact]
-        public void ParsesFloatLiteral()
+        public void ParsesInteger16Literal()
         {
+            var fortyTwo = new Token(TokenType.IntegerLiteral, 1, "42");
+
             var parser = new Parser(new[]
             {
-                new Token(TokenType.FloatLiteral, 1, "4.2"),
+                fortyTwo,
+                new Token(TokenType.Integer16Type, 2),
                 Eof
             });
             var result = parser.ParseLiteral();
 
-            Assert.IsType<FloatLiteral>(result);
-            var literal = result as FloatLiteral;
-            Assert.Equal("4.2", literal?.Value);
+            Assert.IsType<Integer16Literal>(result);
+            var literal = result as Integer16Literal;
+            Assert.Equal(fortyTwo, literal?.Atom);
             Assert.Same(Eof, parser.Current);
+        }
+
+        [Fact]
+        public void ParsesInteger32Literal()
+        {
+            var fortyTwo = new Token(TokenType.IntegerLiteral, 1, "42");
+
+            var parser = new Parser(new[]
+            {
+                fortyTwo,
+                new Token(TokenType.Integer32Type, 2),
+                Eof
+            });
+            var result = parser.ParseLiteral();
+
+            Assert.IsType<Integer32Literal>(result);
+            var literal = result as Integer32Literal;
+            Assert.Equal(fortyTwo, literal?.Atom);
+            Assert.Same(Eof, parser.Current);
+        }
+
+        [Fact]
+        public void ParsesInteger64Literal()
+        {
+            var fortyTwo = new Token(TokenType.IntegerLiteral, 1, "42");
+
+            var parser = new Parser(new[]
+            {
+                fortyTwo,
+                new Token(TokenType.Integer64Type, 2),
+                Eof
+            });
+            var result = parser.ParseLiteral();
+
+            Assert.IsType<Integer64Literal>(result);
+            var literal = result as Integer64Literal;
+            Assert.Equal(fortyTwo, literal?.Atom);
+            Assert.Same(Eof, parser.Current);
+        }
+
+        [Fact]
+        public void ParsesUnsignedInteger8Literal()
+        {
+            var fortyTwo = new Token(TokenType.IntegerLiteral, 1, "42");
+
+            var parser = new Parser(new[]
+            {
+                fortyTwo,
+                new Token(TokenType.UInteger8Type, 2),
+                Eof
+            });
+            var result = parser.ParseLiteral();
+
+            Assert.IsType<UnsignedInteger8Literal>(result);
+            var literal = result as UnsignedInteger8Literal;
+            Assert.Equal(fortyTwo, literal?.Atom);
+            Assert.Same(Eof, parser.Current);
+        }
+
+        [Fact]
+        public void ParsesUnsignedInteger16Literal()
+        {
+            var fortyTwo = new Token(TokenType.IntegerLiteral, 1, "42");
+
+            var parser = new Parser(new[]
+            {
+                fortyTwo,
+                new Token(TokenType.UInteger16Type, 2),
+                Eof
+            });
+            var result = parser.ParseLiteral();
+
+            Assert.IsType<UnsignedInteger16Literal>(result);
+            var literal = result as UnsignedInteger16Literal;
+            Assert.Equal(fortyTwo, literal?.Atom);
+            Assert.Same(Eof, parser.Current);
+        }
+
+        [Fact]
+        public void ParsesUnsignedInteger32Literal()
+        {
+            var fortyTwo = new Token(TokenType.IntegerLiteral, 1, "42");
+
+            var parser = new Parser(new[]
+            {
+                fortyTwo,
+                new Token(TokenType.UInteger32Type, 2),
+                Eof
+            });
+            var result = parser.ParseLiteral();
+
+            Assert.IsType<UnsignedInteger32Literal>(result);
+            var literal = result as UnsignedInteger32Literal;
+            Assert.Equal(fortyTwo, literal?.Atom);
+            Assert.Same(Eof, parser.Current);
+        }
+
+        [Fact]
+        public void ParsesUnsignedInteger64Literal()
+        {
+            var fortyTwo = new Token(TokenType.IntegerLiteral, 1, "42");
+
+            var parser = new Parser(new[]
+            {
+                fortyTwo,
+                new Token(TokenType.UInteger64Type, 2),
+                Eof
+            });
+            var result = parser.ParseLiteral();
+
+            Assert.IsType<UnsignedInteger64Literal>(result);
+            var literal = result as UnsignedInteger64Literal;
+            Assert.Equal(fortyTwo, literal?.Atom);
+            Assert.Same(Eof, parser.Current);
+        }
+
+        [Fact]
+        public void ParsesIntegerLiteralReturnsError()
+        {
+            var current = new Token(TokenType.Identifier, 1, "name");
+            var next = new Token(TokenType.Equal, 2);
+            
+            var parser = new Parser(new[]
+            {
+                current,
+                next,
+                new Token(TokenType.IntegerLiteral, 4, "1"),
+                new Token(TokenType.Integer32Type, 5),
+                Eof
+            });
+            var result = parser.ParseIntegerLiteral();
+
+            Assert.IsType<UnexpectedTokenError>(result);
+            var error = result as UnexpectedTokenError;
+            Assert.Equal(2, error?.Terminals.Count);
+            Assert.Equal(current, error?.Terminals[0]);
+            Assert.Equal(next, error?.Terminals[1]);
+        }
+
+        [Fact]
+        public void ParsesFloat32Literal()
+        {
+            var fortyTwo = new Token(TokenType.FloatLiteral, 1, "4.2");
+
+            var parser = new Parser(new[]
+            {
+                fortyTwo,
+                new Token(TokenType.Float32Type, 2),
+                Eof
+            });
+            var result = parser.ParseLiteral();
+
+            Assert.IsType<Float32Literal>(result);
+            var literal = result as Float32Literal;
+            Assert.Equal(fortyTwo, literal?.Atom);
+            Assert.Same(Eof, parser.Current);
+        }
+
+        [Fact]
+        public void ParsesFloat64Literal()
+        {
+            var fortyTwo = new Token(TokenType.FloatLiteral, 1, "4.2");
+
+            var parser = new Parser(new[]
+            {
+                fortyTwo,
+                new Token(TokenType.Float64Type, 2),
+                Eof
+            });
+            var result = parser.ParseLiteral();
+
+            Assert.IsType<Float64Literal>(result);
+            var literal = result as Float64Literal;
+            Assert.Equal(fortyTwo, literal?.Atom);
+            Assert.Same(Eof, parser.Current);
+        }
+
+        [Fact]
+        public void ParsesFloatLiteralReturnsError()
+        {
+            var current = new Token(TokenType.Identifier, 1, "name");
+            var next = new Token(TokenType.Equal, 2);
+            
+            var parser = new Parser(new[]
+            {
+                current,
+                next,
+                new Token(TokenType.IntegerLiteral, 4, "1"),
+                new Token(TokenType.Integer32Type, 5),
+                Eof
+            });
+            var result = parser.ParseFloatLiteral();
+
+            Assert.IsType<UnexpectedTokenError>(result);
+            var error = result as UnexpectedTokenError;
+            Assert.Equal(2, error?.Terminals.Count);
+            Assert.Equal(current, error?.Terminals[0]);
+            Assert.Equal(next, error?.Terminals[1]);
         }
 
         [Fact]
@@ -529,15 +676,43 @@ namespace Caylang.Assembler.Tests
         }
 
         [Fact]
-        public void ParseIdentifierLiteralThrowsUnexpectedTokenException()
+        public void ParsesStringLiteralWithType()
         {
+            var value = new Token(TokenType.StringLiteral, 1, "string");
+            
             var parser = new Parser(new[]
             {
+                value,
+                new Token(TokenType.StringType, 2),
                 Eof
             });
+            var result = parser.ParseLiteral();
 
-            Assert.Throws<UnexpectedTokenException>(() => parser.ParseLiteral());
+            Assert.IsType<StringLiteral>(result);
+            var literal = result as StringLiteral;
+            Assert.Equal(value, literal?.Atom);
             Assert.Same(Eof, parser.Current);
+        }
+
+        [Fact]
+        public void ParsesStringLiteralReturnsError()
+        {
+            var current = new Token(TokenType.Identifier, 1, "name");
+            
+            var parser = new Parser(new[]
+            {
+                current,
+                new Token(TokenType.Equal, 3),
+                new Token(TokenType.IntegerLiteral, 4, "1"),
+                new Token(TokenType.Integer32Type, 5),
+                Eof
+            });
+            var result = parser.ParseStringLiteral();
+
+            Assert.IsType<UnexpectedTokenError>(result);
+            var error = result as UnexpectedTokenError;
+            Assert.Single(error?.Terminals);
+            Assert.Equal(current, error?.Terminals[0]);
         }
     }
 }

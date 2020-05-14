@@ -5,7 +5,7 @@ using System.Text;
 
 namespace Caylang.Assembler.Passes
 {
-	public class ParseTreePrinter : IVisitor
+	public class ParseTreePrinter : ParseTreeVisitor, IVisitor
 	{
 		readonly string _tab = "    ";
 		int _level = 0;
@@ -31,22 +31,36 @@ namespace Caylang.Assembler.Passes
 			return tab.ToString();
 		}
 
-		private void Print(int line, Type type, string value)
+		private void Print(Type type)
 		{
-			Console.WriteLine($"{MakeTab()}[{type.Name} : {line}] {value}");
-		}
-		private void Print(Type type, string value)
-		{
-			Console.WriteLine($"{MakeTab()}[{type.Name}] {value}");
+			Console.WriteLine($"{MakeTab()}[{type.Name}]");
 		}
 
-		public void Visit(Tree t)
+		private void Print(string property, Token token)
 		{
-			Print(t.GetType(), $"");
+			Console.WriteLine($"{MakeTab()}{property} : [{token.Type}] : Line {token.Line} : '{token.Value}'");
+		}
+
+		public void Visit(IEnumerable<ParseNode> nodes)
+		{
+			if (nodes == null)
+			{
+				return;
+			}
+
+			foreach (var node in nodes)
+			{
+				Visit(node);
+			}
+		}
+
+		public override void Visit(Tree t)
+		{
+			Print(t.GetType());
 			Increment();
 			foreach (var definition in t.Definitions)
 			{
-				Visit(definition.Value);
+				Visit(definition);
 			}
 			foreach (var function in t.Functions)
 			{
@@ -55,9 +69,9 @@ namespace Caylang.Assembler.Passes
 			Decrement();
 		}
 
-		public void Visit(Function f)
+		public override void Visit(FunctionNode f)
 		{
-			Print(f.Line, f.GetType(), $"Name: {f.Name}, Locals: {f.Locals}, Arguments: {f.Arguments}");
+			Print(f.GetType());
 			Increment();
 			foreach (var statement in f.Statements)
 			{
@@ -77,55 +91,152 @@ namespace Caylang.Assembler.Passes
 			Decrement();
 		}
 
-		public void Visit(Definition d)
+		public override void Visit(Definition d)
 		{
-			Print(d.Line, d.GetType(), $"Name: {d.Name}");
+			Print(d.GetType());
 			Increment();
+			Visit(d.Name, "Name");
 			Visit(d.Value);
 			Decrement();
 		}
 
-		public void Visit(LabelStatement l)
+		public override void Visit(LabelStatement l)
 		{
-			Print(l.Line, l.GetType(), $"Label: {l.Label}");
-		}
-
-		public void Visit(NullaryInstruction n)
-		{
-			Print(n.Line, n.GetType(), $"Instruction: {n.Instruction}, ReturnType: {n.ReturnType}");
-		}
-
-		public void Visit(UnaryInstruction u)
-		{
-			Print(u.Line, u.GetType(), $"Instruction: {u.Instruction}, ReturnType: {u.ReturnType}");
+			Print(l.GetType());
 			Increment();
+			Visit(l.Label, "Label");
+			Decrement();
+		}
+
+		public override void Visit(NullaryInstruction n)
+		{
+			Print(n.GetType());
+			Increment();
+			Visit(n.Instruction, "Instruction");
+			Visit(n.ReturnType, "ReturnType");
+			Decrement();
+		}
+
+		public override void Visit(UnaryInstruction u)
+		{
+			Print(u.GetType());
+			Increment();
+			Visit(u.Instruction, "Instruction");
+			Visit(u.ReturnType, "ReturnType");
 			Visit(u.First);
 			Decrement();
 		}
 
-		public void Visit(Operand o)
+		public override void Visit(Integer8Literal i)
 		{
-			Print(o.Line, o.GetType(), $"Type: {o.Type}, Value: {o.Value}");
+			Print(i.GetType());
+			Increment();
+			Visit(i.Atom, "Atom");
+			Decrement();
 		}
 
-		public void Visit(IntegerLiteral i)
+		public override void Visit(Integer16Literal i)
 		{
-			Print(i.GetType(), $"Value: {i.Value}");
+			Print(i.GetType());
+			Increment();
+			Visit(i.Atom, "Atom");
+			Decrement();
 		}
 
-		public void Visit(FloatLiteral f)
+		public override void Visit(Integer32Literal i)
 		{
-			Print(f.GetType(), $"Value: {f.Value}");
+			Print(i.GetType());
+			Increment();
+			Visit(i.Atom, "Atom");
+			Decrement();
 		}
 
-		public void Visit(StringLiteral s)
+		public override void Visit(Integer64Literal i)
 		{
-			Print(s.GetType(), $"Value: {s.Value}");
+			Print(i.GetType());
+			Increment();
+			Visit(i.Atom, "Atom");
+			Decrement();
 		}
 
-		public void Visit(IdentifierLiteral i)
+		public override void Visit(UnsignedInteger8Literal i)
 		{
-			Print(i.GetType(), $"Value: {i.Value}");
+			Print(i.GetType());
+			Increment();
+			Visit(i.Atom, "Atom");
+			Decrement();
+		}
+
+		public override void Visit(UnsignedInteger16Literal i)
+		{
+			Print(i.GetType());
+			Increment();
+			Visit(i.Atom, "Atom");
+			Decrement();
+		}
+
+		public override void Visit(UnsignedInteger32Literal i)
+		{
+			Print(i.GetType());
+			Increment();
+			Visit(i.Atom, "Atom");
+			Decrement();
+		}
+
+		public override void Visit(UnsignedInteger64Literal i)
+		{
+			Print(i.GetType());
+			Increment();
+			Visit(i.Atom, "Atom");
+			Decrement();
+		}
+
+		public override void Visit(Float32Literal f)
+		{
+			Print(f.GetType());
+			Increment();
+			Visit(f.Atom, "Atom");
+			Decrement();
+		}
+
+		public override void Visit(Float64Literal f)
+		{
+			Print(f.GetType());
+			Increment();
+			Visit(f.Atom, "Atom");
+			Decrement();
+		}
+
+		public override void Visit(StringLiteral s)
+		{
+			Print(s.GetType());
+			Increment();
+			Visit(s.Atom, "Atom");
+			Decrement();
+		}
+
+		public override void Visit(IdentifierLiteral i)
+		{
+			Print(i.GetType());
+			Increment();
+			Visit(i.Atom, "Atom");
+			Decrement();
+		}
+
+		public override void Visit(UnexpectedTokenError u)
+		{
+			Print(u.GetType());
+			Increment();
+			foreach (var token in u.Children)
+			{
+				Visit(token);
+			}
+			Decrement();
+		}
+
+		public void Visit(Token token, string property = "")
+		{
+			Print(property, token);
 		}
 	}
 }

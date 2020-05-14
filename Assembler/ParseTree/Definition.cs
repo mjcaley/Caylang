@@ -1,15 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace Caylang.Assembler.ParseTree
 {
-	public class Definition
+	public class Definition : ParseNode
 	{
-		public Definition(string name, Operand value, int line) => (Name, Value, Line) = (name, value, line);
+		public Definition(Token name, ParseNode value) : base(value) => Name = name;
 
-		public string Name { get; }
-		public Operand Value { get; }
-		public int Line { get; }
+		public Token Name { get; }
+		public Literal? Value => Children.First() as Literal;
 	}
 }

@@ -1,19 +1,74 @@
 ﻿using Caylang.Assembler.ParseTree;
 using System.Collections.Generic;
 using System.Linq;
-using InstructionType = Caylang.Assembler.ParseTree.InstructionType;
 
 namespace Caylang.Assembler
 {
     public class Parser
-	{
+    {
+        #region Error recovery token types
+        private static IEnumerable<TokenType> NullaryInstructionTypes { get; } = new[]
+        {
+            TokenType.Halt,
+            TokenType.Noop,
+            TokenType.Pop,
+            TokenType.Add,
+            TokenType.Subtract,
+            TokenType.Multiply,
+            TokenType.Divide,
+            TokenType.Modulo,
+            TokenType.TestEqual,
+            TokenType.TestNotEqual,
+            TokenType.TestGreaterThan,
+            TokenType.TestLessThan,
+            TokenType.Return
+        };
+
+        private static IEnumerable<TokenType> UnaryInstructionTypes { get; } = new[]
+        {
+            TokenType.LoadConst,
+            TokenType.LoadLocal,
+            TokenType.StoreLocal,
+            TokenType.Jump,
+            TokenType.JumpTrue,
+            TokenType.JumpFalse,
+            TokenType.NewStruct,
+            TokenType.NewArray,
+            TokenType.CallFunc,
+            TokenType.LoadField,
+            TokenType.StoreField
+        };
+
+        private static IEnumerable<TokenType> InstructionTypes { get; } =
+            NullaryInstructionTypes.Union(UnaryInstructionTypes);
+
+        private static IEnumerable<TokenType> StatementTypes { get; } = new[]
+        {
+            TokenType.EndOfFile,
+            TokenType.Define,
+            TokenType.Func
+        };
+
+        static private IEnumerable<TokenType> InstructionRecovery { get; } =
+            StatementTypes.Union(UnaryInstructionTypes).Union(NullaryInstructionTypes);
+
+        private static IEnumerable<TokenType> ReturnTypes { get; } = new[]
+        {
+            TokenType.Integer8Type,
+            TokenType.Integer16Type,
+            TokenType.Integer32Type,
+            TokenType.Integer64Type,
+            TokenType.UInteger8Type,
+            TokenType.UInteger16Type,
+            TokenType.UInteger32Type,
+            TokenType.UInteger64Type,
+            TokenType.Float32Type,
+            TokenType.Float64Type,
+            TokenType.AddressType
+        };
+        #endregion
+
         private readonly IEnumerator<Token> tokens;
-
-        public Token? Current { get; private set; }
-
-        public Token? Next { get; private set; }
-
-        public List<ParserException> Errors { get; } = new List<ParserException>();
 
         public Parser(IEnumerator<Token> tokens)
         {
@@ -24,6 +79,11 @@ namespace Caylang.Assembler
 
         public Parser(IEnumerable<Token> tokens) : this(tokens.GetEnumerator()) { }
 
+        public Token? Current { get; private set; }
+
+        public Token? Next { get; private set; }
+
+        #region Parser utility methods
         private void Advance()
         {
             Current = Next;
@@ -37,25 +97,42 @@ namespace Caylang.Assembler
             }
         }
 
-        private void SkipTo(params TokenType[] types)
+        private List<Token?> CollectUntil(IEnumerable<TokenType> types)
         {
+            var collected = new List<Token?>();
             while (Current != null && !types.Contains(Current.Type))
             {
+                collected.Add(Current);
                 Advance();
             }
+
+            return collected;
         }
 
-        private bool Match(params TokenType[] types)
+        private bool Match(TokenType type)
         {
             if (Current != null)
             {
-                return types.Contains(Current.Type);
+                return Current.Type == type;
             }
 
             return false;
         }
 
-        private Token Expect(TokenType type)
+        private bool Match(IEnumerable<TokenType> types)
+        {
+            foreach (var type in types)
+            {
+                if (Match(type))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private Token? Expect(TokenType type)
         {
             if (Current?.Type == type)
             {
@@ -64,300 +141,284 @@ namespace Caylang.Assembler
                 
                 return token;
             }
-            else
-            {
-                throw new UnexpectedTokenException(Current);
-            }
+
+            return null;
         }
 
-        public Tree Start()
+        private Token? Expect(IEnumerable<TokenType> types)
         {
-            var tree = new Tree();
+            foreach (var tokenType in types)
+            {
+                if (Current?.Type == tokenType)
+                {
+                    var token = Current;
+                    Advance();
+
+                    return token;
+                }
+            }
+
+            return null;
+        }
+
+        bool Expect(TokenType type, out Token token)
+        {
+            var expected = Expect(type);
+            if (expected != null)
+            {
+                token = expected;
+                return true;
+            }
+
+            token = new Token(TokenType.Error, 0);
+            return false;
+        }
+
+        bool Expect(IEnumerable<TokenType> types, out Token token)
+        {
+            var expected = Expect(types);
+            if (expected != null)
+            {
+                token = expected;
+                return true;
+            }
+
+            token = new Token(TokenType.Error, 0);
+            return false;
+        }
+        #endregion
+
+        #region Recursive descent methods
+        public ParseNode Start()
+        {
+            var definitions = new List<ParseNode>();
+            var functions = new List<ParseNode>();
+            var errors = new List<ParseNode>();
 
             while (!Match(TokenType.EndOfFile))
             {
                 if (Match(TokenType.Func))
                 {
-                    tree.Functions.Add(ParseFunction());
+                    functions.Add(ParseFunction());
                 }
                 else if (Match(TokenType.Define))
                 {
-                    tree.Definitions.Add(ParseDefinition());
+                    definitions.Add(ParseDefinition());
                 }
                 else
                 {
-                    Errors.Add(new UnexpectedTokenException(Current));
-                    SkipTo(TokenType.Func, TokenType.Define, TokenType.EndOfFile);
+                    errors.Add(new UnexpectedTokenError(CollectUntil(StatementTypes)));
                 }
             }
 
-            return tree;
+            return new Tree(definitions, functions, errors);
         }
 
-        public Definition ParseDefinition()
+        public ParseNode ParseDefinition()
         {
-            var line = Current?.Line ?? 0;
-
-            Expect(TokenType.Define);
-            var name = Expect(TokenType.Identifier).Value;
-            Expect(TokenType.Equal);
-            var operand = ParseOperand();
+            if (
+                Expect(TokenType.Define, out var _) &&
+                Expect(TokenType.Identifier, out var name) &&
+                Expect(TokenType.Equal, out var _)
+            )
+            {
+                var operand = ParseLiteral();
+                return new Definition(name, operand);
+            }
             
-            return new Definition(name, operand, line);
+            return new UnexpectedTokenError(Current);
         }
 
-        public Function ParseFunction()
+        public ParseNode ParseFunction()
         {
-            var line = Current?.Line ?? 0;
+            if (
+                Expect(TokenType.Func, out var _) &&
+                Expect(TokenType.Identifier, out var name) &&
 
-            Expect(TokenType.Func);
-            var name = Expect(TokenType.Identifier).Value;
-
-            Expect(TokenType.Locals);
-            Expect(TokenType.Equal);
-            int locals;
+                Expect(TokenType.Locals, out var _) &&
+                Expect(TokenType.Equal, out var _) &&
+                Expect(TokenType.IntegerLiteral, out var locals) &&
+                
+                Expect(TokenType.Args, out var _) &&
+                Expect(TokenType.Equal, out var _) &&
+                Expect(TokenType.IntegerLiteral, out var args)
+                )
             {
-                var localToken = Expect(TokenType.IntegerLiteral);
-                var localResult = int.TryParse(localToken.Value, out locals);
-                if (!localResult)
-                {
-                    throw new IntegerConversionException(localToken);
-                }
-            }
-            
-            Expect(TokenType.Args);
-            Expect(TokenType.Equal);
-            int args;
-            {
-                var argToken = Expect(TokenType.IntegerLiteral);
-                var argsResult = int.TryParse(argToken.Value, out args);
-                if (!argsResult)
-                {
-                    throw new IntegerConversionException(argToken);
-                }
+                var statements = ParseStatements();
+                
+                return new FunctionNode(name, locals, args, statements);
             }
 
-            var statements = ParseStatements();
-            
-            return new Function(name, locals, args, line, statements);
+            return new UnexpectedTokenError(Current);
         }
         
-        public List<Statement> ParseStatements()
+        public List<ParseNode> ParseStatements()
         {
-            var instructions = new List<Statement>();
+            var instructions = new List<ParseNode>();
             
-            try
+            while (!Match(StatementTypes))
             {
-                while (!Match(TokenType.EndOfFile, TokenType.Func, TokenType.Define))
+                if (Match(TokenType.Identifier))
                 {
-                    if (Current?.Type == TokenType.Identifier)
-                    {
-                        instructions.Add(ParseLabel());
-                    }
-                    else
-                    {
-                        instructions.Add(ParseInstruction());
-                    }
+                    instructions.Add(ParseLabel());
                 }
-            }
-            catch (ParserException e)
-            {
-                Errors.Add(e);
-                SkipTo(TokenType.EndOfFile, TokenType.Func, TokenType.Define);
+                else if (Match(InstructionTypes))
+                {
+                    instructions.Add(ParseInstruction());
+                }
+                else
+                {
+                    instructions.Add(
+                        new UnexpectedTokenError(CollectUntil(InstructionRecovery))
+                        );
+                    break;
+                }
             }
 
             return instructions;
         }
 
-        public LabelStatement ParseLabel()
+        public ParseNode ParseLabel()
         {
-            if (Current?.Type == TokenType.Identifier && Next?.Type == TokenType.Colon)
+                if (Expect(TokenType.Identifier, out var name) && Expect(TokenType.Colon, out var _))
+                {
+                    return new LabelStatement(name);
+                }
+         
+                return new UnexpectedTokenError(Current);
+        }
+
+        public ParseNode ParseInstruction()
+        {
+            if (Match(NullaryInstructionTypes))
             {
-                var line = Current.Line;
-                var name = Current.Value;
+                return ParseNullaryInstruction();
+            }
+            else if (Match(UnaryInstructionTypes))
+            {
+                return ParseUnaryInstruction();
+            }
+            
+            return new UnexpectedTokenError(
+                CollectUntil(InstructionRecovery)
+            );
+        }
+
+        private ParseNode ParseNullaryInstruction()
+        {
+            if (Expect(NullaryInstructionTypes, out var instruction))
+            {
+                var returnType = Expect(ReturnTypes) ?? new Token(TokenType.VoidType, 0);
                 
+                return new NullaryInstruction(instruction, returnType);
+            }
+
+            return new UnexpectedTokenError(Current);
+        }
+
+        private ParseNode ParseUnaryInstruction()
+        {
+            if (Expect(UnaryInstructionTypes, out var instruction))
+            {
+                var returnType = Expect(ReturnTypes) ?? new Token(TokenType.VoidType, 0);
+                var operand = ParseLiteral();
+                
+                return new UnaryInstruction(instruction, returnType, operand);
+            }
+            
+            return new UnexpectedTokenError(Current);
+        }
+
+        public ParseNode ParseLiteral() =>
+            Current?.Type switch
+            {
+                TokenType.IntegerLiteral => ParseIntegerLiteral(),
+                TokenType.FloatLiteral => ParseFloatLiteral(),
+                TokenType.StringLiteral => ParseStringLiteral(),
+                TokenType.Identifier => ParseIdentifierLiteral(),
+                _ => new UnexpectedTokenError(Current)
+            };
+
+        public ParseNode ParseIntegerLiteral()
+        {
+            if (Current?.Type == TokenType.IntegerLiteral)
+            {
+                ParseNode integerLiteral = Next?.Type switch
+                {
+                    TokenType.Integer8Type => new Integer8Literal(Current),
+                    TokenType.Integer16Type => new Integer16Literal(Current),
+                    TokenType.Integer32Type => new Integer32Literal(Current),
+                    TokenType.Integer64Type => new Integer64Literal(Current),
+                    TokenType.UInteger8Type => new UnsignedInteger8Literal(Current),
+                    TokenType.UInteger16Type => new UnsignedInteger16Literal(Current),
+                    TokenType.UInteger32Type => new UnsignedInteger32Literal(Current),
+                    TokenType.UInteger64Type => new UnsignedInteger64Literal(Current),
+                    _ => new UnexpectedTokenError(Current, Next)
+                };
                 Advance();
                 Advance();
-                
-                return new LabelStatement(name, line);
+
+                return integerLiteral;
             }
             else
             {
-                throw new UnexpectedTokenException(Current);
+                return new UnexpectedTokenError(Current, Next);
             }
         }
 
-        public InstructionStatement ParseInstruction()
+        public ParseNode ParseFloatLiteral()
         {
-            switch (Current?.Type)
+            if (Current?.Type == TokenType.FloatLiteral)
             {
-                case TokenType.Halt:
-                case TokenType.Noop:
-                case TokenType.Pop:
-                case TokenType.Add:
-                case TokenType.Subtract:
-                case TokenType.Multiply:
-                case TokenType.Divide:
-                case TokenType.Modulo:
-                case TokenType.TestEqual:
-                case TokenType.TestNotEqual:
-                case TokenType.TestGreaterThan:
-                case TokenType.TestLessThan:
-                case TokenType.Return:
-                    return ParseNullaryInstruction();
-                case TokenType.LoadConst:
-                case TokenType.LoadLocal:
-                case TokenType.StoreLocal:
-                case TokenType.Jump:
-                case TokenType.JumpTrue:
-                case TokenType.JumpFalse:
-                case TokenType.NewStruct:
-                case TokenType.NewArray:
-                case TokenType.CallFunc:
-                case TokenType.LoadField:
-                case TokenType.StoreField:
-                    return ParseUnaryInstruction();
-                default:
-                    throw new UnexpectedTokenException(Current);
+                ParseNode floatLiteral = Next?.Type switch
+                {
+                    TokenType.Float32Type => new Float32Literal(Current),
+                    TokenType.Float64Type => new Float64Literal(Current),
+                    _ => new UnexpectedTokenError(Current, Next)
+                };
+                Advance();
+                Advance();
+
+                return floatLiteral;
+            }
+            
+            return new UnexpectedTokenError(Current, Next);
+        }
+
+        public ParseNode ParseStringLiteral()
+        {
+            if (Current?.Type == TokenType.StringLiteral)
+            {
+                var stringLiteral = new StringLiteral(Current);
+                Advance();
+
+                if (Current?.Type == TokenType.StringType)
+                {
+                    Advance();
+                }
+
+                return stringLiteral;
+            }
+            else
+            {
+                return new UnexpectedTokenError(Current);
             }
         }
         
-        private NullaryInstruction ParseNullaryInstruction()
+        public ParseNode ParseIdentifierLiteral()
         {
-            var line = Current?.Line ?? 0;
-
-            var instruction = Current?.Type switch
+            if (Current?.Type == TokenType.Identifier)
             {
-                TokenType.Halt => Instruction.Halt,
-                TokenType.Noop => Instruction.Noop,
-                TokenType.Pop => Instruction.Pop,
-                TokenType.Add => Instruction.Add,
-                TokenType.Subtract => Instruction.Sub,
-                TokenType.Multiply => Instruction.Mul,
-                TokenType.Divide => Instruction.Div,
-                TokenType.Modulo => Instruction.Mod,
-                TokenType.TestEqual => Instruction.TestEQ,
-                TokenType.TestNotEqual => Instruction.TestNE,
-                TokenType.TestGreaterThan => Instruction.TestGT,
-                TokenType.TestLessThan => Instruction.TestLT,
-                TokenType.Return => Instruction.Ret,
-                _ => throw new UnexpectedTokenException(Current)
-            };
-            Advance();
-
-            InstructionType type = ParseInstructionType();
-            
-            return new NullaryInstruction(instruction, type, line);
-        }
-
-        private UnaryInstruction ParseUnaryInstruction()
-        {
-            var line = Current?.Line ?? 0;
-
-            var instruction = Current?.Type switch
-            {
-                TokenType.LoadConst => Instruction.LdConst,
-                TokenType.LoadLocal => Instruction.LdLocal,
-                TokenType.StoreLocal => Instruction.StLocal,
-                TokenType.Jump => Instruction.Jmp,
-                TokenType.JumpTrue => Instruction.JmpT,
-                TokenType.JumpFalse => Instruction.JmpF,
-                TokenType.NewStruct => Instruction.NewStruct,
-                TokenType.NewArray => Instruction.NewArray,
-                TokenType.CallFunc => Instruction.CallFunc,
-                TokenType.LoadField => Instruction.LdField,
-                TokenType.StoreField => Instruction.StField,
-                _ => throw new UnexpectedTokenException(Current)
-            };
-            Advance();
-
-            var type = ParseInstructionType();
-            var operand = ParseOperand();
-            
-            return new UnaryInstruction(instruction, type, operand, line);
-        }
-
-        public InstructionType ParseInstructionType()
-        {
-            var type = Current?.Type switch
-            {
-                TokenType.i8Type => InstructionType.Integer8,
-                TokenType.u8Type => InstructionType.UInteger8,
-                TokenType.i16Type => InstructionType.Integer16,
-                TokenType.u16Type => InstructionType.UInteger16,
-                TokenType.i32Type => InstructionType.Integer32,
-                TokenType.u32Type => InstructionType.UInteger32,
-                TokenType.i64Type => InstructionType.Integer64,
-                TokenType.u64Type => InstructionType.UInteger64,
-                TokenType.f32Type => InstructionType.FloatingPoint32,
-                TokenType.f64Type => InstructionType.FloatingPoint64,
-                TokenType.AddressType => InstructionType.Address,
-                _ => InstructionType.Void
-            };
-            if (type != InstructionType.Void)
-            {
+                var identifier = new IdentifierLiteral(Current);
                 Advance();
-            }
-
-            return type;
-        }
-
-        public Operand ParseOperand()
-        {
-            var line = Current?.Line ?? 0;
-
-            var literal = ParseLiteral();
-
-            if (literal is IdentifierLiteral)
-            {
-                return new Operand(literal, OperandType.Unknown, line);
-            }
-            else if (literal is StringLiteral)
-            {
-                return new Operand(literal, OperandType.StringType, line);
+                
+                return identifier;
             }
             else
             {
-                var type = ParseOperandType();
-                return new Operand(literal, type, line);
+                return new UnexpectedTokenError(Current);
             }
         }
-
-        public OperandType ParseOperandType()
-        {
-            var operandType = Current?.Type switch
-            {
-                TokenType.i8Type => OperandType.Integer8,
-                TokenType.u8Type => OperandType.UInteger8,
-                TokenType.i16Type => OperandType.Integer16,
-                TokenType.u16Type => OperandType.UInteger16,
-                TokenType.i32Type => OperandType.Integer32,
-                TokenType.u32Type => OperandType.UInteger32,
-                TokenType.i64Type => OperandType.Integer64,
-                TokenType.u64Type => OperandType.UInteger64,
-                TokenType.f32Type => OperandType.FloatingPoint32,
-                TokenType.f64Type => OperandType.FloatingPoint64,
-                TokenType.AddressType => OperandType.Address,
-                _ => throw new UnexpectedTokenException(Current)
-            };
-            Advance();
-
-            return operandType;
-        }
-
-        public Literal ParseLiteral()
-        {
-            Literal literal = Current?.Type switch
-            {
-                TokenType.Identifier => new IdentifierLiteral(Current.Value),
-                TokenType.IntegerLiteral => new IntegerLiteral(Current.Value),
-                TokenType.FloatLiteral => new FloatLiteral(Current.Value),
-                TokenType.StringLiteral => new StringLiteral(Current.Value),
-                _ => throw new UnexpectedTokenException(Current)
-            };
-            Advance();
-
-            return literal;
-        }
+        #endregion
     }
 }

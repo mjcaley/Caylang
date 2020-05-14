@@ -6,8 +6,8 @@ namespace Caylang.Assembler.ParseTree
 {
 	public class LabelStatement : Statement
 	{
-		public LabelStatement(string label, int line) : base(line) => Label = label;
+		public LabelStatement(Token label) => Label = label;
 
-		public string Label { get; }
+		public Token Label { get; }
 	}
 }
