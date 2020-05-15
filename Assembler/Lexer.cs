@@ -146,14 +146,14 @@ namespace Caylang.Assembler
         public Token? SkipWhitespace() =>
             Current switch
             {
-                var _ when char.IsWhiteSpace(Current) => Skip().Emit(),
+                _ when char.IsWhiteSpace(Current) => Skip().Emit(),
                 _ => Transition(Start).Emit()
             };
 
         public Token? Start() =>
             Current switch
             {
-                var _ when char.IsWhiteSpace(Current) => Transition(SkipWhitespace).Emit(),
+                _ when char.IsWhiteSpace(Current) => Transition(SkipWhitespace).Emit(),
                 '=' => Skip().Emit(TokenType.Equal),
                 ':' => Skip().Emit(TokenType.Colon),
                 '-' => Append().Transition(NumberBase).Emit(),
@@ -196,10 +196,10 @@ namespace Caylang.Assembler
             Current switch
             {
                 var x when
-                (x >= '0' && x <= '9') ||
-                (x >= 'a' && x <= 'f') ||
-                (x >= 'A' && x <= 'F') => Append().Emit(),
-                _ => ReplaceLexeme((lexeme) =>
+                x >= '0' && x <= '9' ||
+                x >= 'a' && x <= 'f' ||
+                x >= 'A' && x <= 'F' => Append().Emit(),
+                _ => ReplaceLexeme(lexeme =>
                 {
                     var integer = Convert.ToUInt64(lexeme, 16);
                     return integer.ToString(CultureInfo.InvariantCulture);
@@ -209,7 +209,7 @@ namespace Caylang.Assembler
         public Token? DecNumber() =>
             Current switch
             {
-                var _ when char.IsDigit(Current) => Append().Emit(),
+                _ when char.IsDigit(Current) => Append().Emit(),
                 '.' => Append().Transition(FloatNumber).Emit(),
                 _ => Transition(Start).ConsumeAndEmit(TokenType.IntegerLiteral)
             };
@@ -217,7 +217,7 @@ namespace Caylang.Assembler
         public Token? FloatNumber() =>
             Current switch
             {
-                var _ when char.IsDigit(Current) => Append().Emit(),
+                _ when char.IsDigit(Current) => Append().Emit(),
                 _ => Transition(Start).ConsumeAndEmit(TokenType.FloatLiteral)
             };
 
