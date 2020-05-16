@@ -142,7 +142,6 @@ namespace Caylang.Assembler
             return this;
         }
 
-
         public Token? SkipWhitespace() =>
             Current switch
             {
@@ -156,8 +155,8 @@ namespace Caylang.Assembler
                 _ when char.IsWhiteSpace(Current) => Transition(SkipWhitespace).Emit(),
                 '=' => Skip().Emit(TokenType.Equal),
                 ':' => Skip().Emit(TokenType.Colon),
-                '-' => Append().Transition(NumberBase).Emit(),
-                '.' => ReplaceLexeme((_) => "0").Append().Transition(FloatNumber).Emit(),
+                '-' => Append().Transition(Negative).Emit(),
+                '.' => ReplaceLexeme(_ => "0").Append().Transition(FloatNumber).Emit(),
                 '0' => Append().Transition(NumberBase).Emit(),
                 var x when 
                     x >= '1' && 
@@ -166,6 +165,14 @@ namespace Caylang.Assembler
                 var x when x == '_' || char.IsLetter(x) => Append().Transition(Keyword).Emit(),
                 '\0' => Transition(End).Emit(),
                 _ => Skip().Emit(TokenType.Error)
+            };
+        
+        public Token? Negative() =>
+            Current switch
+            {
+                '0' => Append().Transition(NumberBase).Emit(),
+                var x when x >= '1' && x <= '9' => Append().Transition(DecNumber).Emit(),
+                _ => Transition(Start).ConsumeAndEmit(TokenType.Error)
             };
 
         public Token? NumberBase() =>
@@ -185,10 +192,18 @@ namespace Caylang.Assembler
             Current switch
             {
                 var x when x == '0' || x == '1' => Append().Emit(),
-                _ => ReplaceLexeme((lexeme) =>
+                _ => ReplaceLexeme(lexeme =>
                 {
-                    var integer = Convert.ToInt64(lexeme, 2);
-                    return integer.ToString(CultureInfo.InvariantCulture);
+                    if (lexeme.StartsWith('-'))
+                    {
+                        var integer = Convert.ToInt64(lexeme, 2);
+                        return integer.ToString(CultureInfo.InvariantCulture);
+                    }
+                    else
+                    {
+                        var integer = Convert.ToUInt64(lexeme, 2);
+                        return integer.ToString(CultureInfo.InvariantCulture);
+                    }
                 }).Transition(Start).ConsumeAndEmit(TokenType.IntegerLiteral)
             };
 
