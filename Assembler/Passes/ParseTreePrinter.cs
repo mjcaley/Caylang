@@ -58,14 +58,7 @@ namespace Caylang.Assembler.Passes
 		{
 			Print(t.GetType());
 			Increment();
-			foreach (var definition in t.Definitions)
-			{
-				Visit(definition);
-			}
-			foreach (var function in t.Functions)
-			{
-				Visit(function);
-			}
+			Visit(t.Children);
 			Decrement();
 		}
 
@@ -73,21 +66,7 @@ namespace Caylang.Assembler.Passes
 		{
 			Print(f.GetType());
 			Increment();
-			foreach (var statement in f.Statements)
-			{
-				switch (statement)
-				{
-					case LabelStatement l:
-						Visit(l);
-						break;
-					case NullaryInstruction n:
-						Visit(n);
-						break;
-					case UnaryInstruction u:
-						Visit(u);
-						break;
-				}
-			}
+			Visit(f.Children);
 			Decrement();
 		}
 
@@ -96,7 +75,7 @@ namespace Caylang.Assembler.Passes
 			Print(d.GetType());
 			Increment();
 			Visit(d.Name, "Name");
-			Visit(d.Value);
+			Visit(d.Children);
 			Decrement();
 		}
 
@@ -123,7 +102,19 @@ namespace Caylang.Assembler.Passes
 			Increment();
 			Visit(u.Instruction, "Instruction");
 			Visit(u.ReturnType, "ReturnType");
-			Visit(u.First);
+			Visit(u.Children);
+			Decrement();
+		}
+
+		public override void Visit(UnaryExpression u)
+		{
+			Print(u.GetType());
+			Increment();
+			if (u.Operator != null)
+			{
+				Visit(u.Operator, "Operator");
+			}
+			Visit(u.Children);
 			Decrement();
 		}
 
@@ -227,9 +218,9 @@ namespace Caylang.Assembler.Passes
 		{
 			Print(u.GetType());
 			Increment();
-			foreach (var token in u.Children)
+			foreach (var token in u.Terminals)
 			{
-				Visit(token);
+				Visit(token, "Terminal");
 			}
 			Decrement();
 		}
