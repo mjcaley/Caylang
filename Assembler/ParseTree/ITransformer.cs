@@ -11,6 +11,8 @@
         NullaryInstruction Transform(NullaryInstruction n);
         UnaryInstruction Transform(UnaryInstruction u);
 
+        UnaryExpression Transform(UnaryExpression u);
+
         Literal Transform(Literal l);
         Integer8Literal Transform(Integer8Literal i);
         Integer16Literal Transform(Integer16Literal i);

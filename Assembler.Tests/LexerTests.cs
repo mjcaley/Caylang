@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using Xunit;
 
 namespace Caylang.Assembler.Tests
@@ -255,17 +255,6 @@ namespace Caylang.Assembler.Tests
             Assert.Equal(1, token?.Line);
             Assert.Equal(lexer.Start, lexer.Mode);
             Assert.NotEqual(input?[0], lexer.Current);
-        }
-
-        [Fact]
-        public void StartTransitionsToNegative()
-        {
-            using var testInput = new StringReader("-");
-            var lexer = new Lexer(testInput);
-            var token = lexer.Start();
-            
-            Assert.Null(token);
-            Assert.Equal(lexer.Negative, lexer.Mode);
         }
 
         [Fact]
@@ -945,62 +934,60 @@ namespace Caylang.Assembler.Tests
         #region Emits tokens
         [Theory]
         [InlineData("1", TokenType.IntegerLiteral, "1")]
-        [InlineData("-1", TokenType.IntegerLiteral, "-1")]
         [InlineData("123", TokenType.IntegerLiteral, "123")]
-        [InlineData("-123", TokenType.IntegerLiteral, "-123")]
         [InlineData("0x2a", TokenType.IntegerLiteral, "42")]
-        [InlineData("-0x2a", TokenType.IntegerLiteral, "42")]
         [InlineData("0b101010", TokenType.IntegerLiteral, "42")]
-        [InlineData("-0b101010", TokenType.IntegerLiteral, "42")]
         [InlineData("0.1", TokenType.FloatLiteral, "0.1")]
-        [InlineData("-0.1", TokenType.FloatLiteral, "-0.1")]
         [InlineData("123.123", TokenType.FloatLiteral, "123.123")]
-        [InlineData("-123.123", TokenType.FloatLiteral, "-123.123")]
         [InlineData("\"value\"", TokenType.StringLiteral, "value")]
         [InlineData("value", TokenType.Identifier, "value")]
         
-        [InlineData("func", TokenType.Func, "")]
-        [InlineData("define", TokenType.Define, "")]
-        [InlineData("args", TokenType.Args, "")]
-        [InlineData("locals", TokenType.Locals, "")]
-        [InlineData("halt", TokenType.Halt, "")]
-        [InlineData("nop", TokenType.Noop, "")]
-        [InlineData("add", TokenType.Add, "")]
-        [InlineData("sub", TokenType.Subtract, "")]
-        [InlineData("mul", TokenType.Multiply, "")]
-        [InlineData("div", TokenType.Divide, "")]
-        [InlineData("mod", TokenType.Modulo, "")]
-        [InlineData("ldconst", TokenType.LoadConst, "")]
-        [InlineData("ldlocal", TokenType.LoadLocal, "")]
-        [InlineData("stlocal", TokenType.StoreLocal, "")]
-        [InlineData("pop", TokenType.Pop, "")]
-        [InlineData("testeq", TokenType.TestEqual, "")]
-        [InlineData("testne", TokenType.TestNotEqual, "")]
-        [InlineData("testgt", TokenType.TestGreaterThan, "")]
-        [InlineData("testlt", TokenType.TestLessThan, "")]
-        [InlineData("jmp", TokenType.Jump, "")]
-        [InlineData("jmpt", TokenType.JumpTrue, "")]
-        [InlineData("jmpf", TokenType.JumpFalse, "")]
-        [InlineData("callfunc", TokenType.CallFunc, "")]
-        [InlineData("callinterface", TokenType.CallInterface, "")]
-        [InlineData("ret", TokenType.Return, "")]
-        [InlineData("newstruct", TokenType.NewStruct, "")]
-        [InlineData("ldfield", TokenType.LoadField, "")]
-        [InlineData("stfield", TokenType.StoreField, "")]
-        [InlineData("newarray", TokenType.NewArray, "")]
-        [InlineData("addr", TokenType.AddressType, "")]
-        [InlineData("i8", TokenType.Integer8Type, "")]
-        [InlineData("u8", TokenType.UInteger8Type, "")]
-        [InlineData("i16", TokenType.Integer16Type, "")]
-        [InlineData("u16", TokenType.UInteger16Type, "")]
-        [InlineData("i32", TokenType.Integer32Type, "")]
-        [InlineData("u32", TokenType.UInteger32Type, "")]
-        [InlineData("i64", TokenType.Integer64Type, "")]
-        [InlineData("u64", TokenType.UInteger64Type, "")]
-        [InlineData("f32", TokenType.Float32Type, "")]
-        [InlineData("f64", TokenType.Float64Type, "")]
-        [InlineData("str", TokenType.StringType, "")]
-        public void TestEmittingTokens(string input, TokenType expectedType, string expectedValue)
+        [InlineData("=", TokenType.Equal)]
+        [InlineData(":", TokenType.Colon)]
+        [InlineData("-", TokenType.Negative)]
+        
+        [InlineData("func", TokenType.Func)]
+        [InlineData("define", TokenType.Define)]
+        [InlineData("args", TokenType.Args)]
+        [InlineData("locals", TokenType.Locals)]
+        [InlineData("halt", TokenType.Halt)]
+        [InlineData("nop", TokenType.Noop)]
+        [InlineData("add", TokenType.Add)]
+        [InlineData("sub", TokenType.Subtract)]
+        [InlineData("mul", TokenType.Multiply)]
+        [InlineData("div", TokenType.Divide)]
+        [InlineData("mod", TokenType.Modulo)]
+        [InlineData("ldconst", TokenType.LoadConst)]
+        [InlineData("ldlocal", TokenType.LoadLocal)]
+        [InlineData("stlocal", TokenType.StoreLocal)]
+        [InlineData("pop", TokenType.Pop)]
+        [InlineData("testeq", TokenType.TestEqual)]
+        [InlineData("testne", TokenType.TestNotEqual)]
+        [InlineData("testgt", TokenType.TestGreaterThan)]
+        [InlineData("testlt", TokenType.TestLessThan)]
+        [InlineData("jmp", TokenType.Jump)]
+        [InlineData("jmpt", TokenType.JumpTrue)]
+        [InlineData("jmpf", TokenType.JumpFalse)]
+        [InlineData("callfunc", TokenType.CallFunc)]
+        [InlineData("callinterface", TokenType.CallInterface)]
+        [InlineData("ret", TokenType.Return)]
+        [InlineData("newstruct", TokenType.NewStruct)]
+        [InlineData("ldfield", TokenType.LoadField)]
+        [InlineData("stfield", TokenType.StoreField)]
+        [InlineData("newarray", TokenType.NewArray)]
+        [InlineData("addr", TokenType.AddressType)]
+        [InlineData("i8", TokenType.Integer8Type)]
+        [InlineData("u8", TokenType.UInteger8Type)]
+        [InlineData("i16", TokenType.Integer16Type)]
+        [InlineData("u16", TokenType.UInteger16Type)]
+        [InlineData("i32", TokenType.Integer32Type)]
+        [InlineData("u32", TokenType.UInteger32Type)]
+        [InlineData("i64", TokenType.Integer64Type)]
+        [InlineData("u64", TokenType.UInteger64Type)]
+        [InlineData("f32", TokenType.Float32Type)]
+        [InlineData("f64", TokenType.Float64Type)]
+        [InlineData("str", TokenType.StringType)]
+        public void TestEmittingTokens(string input, TokenType expectedType, string expectedValue = "")
         {
             using var testInput = new StringReader(input);
             var result = Lexer.Lex(testInput);

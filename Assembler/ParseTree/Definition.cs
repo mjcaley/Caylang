@@ -10,6 +10,6 @@ namespace Caylang.Assembler.ParseTree
 		public Definition(Token name, ParseNode value) : base(value) => Name = name;
 
 		public Token Name { get; }
-		public Literal? Value => Children.First() as Literal;
+		public UnaryExpression? Value => Children.First() as UnaryExpression;
 	}
 }

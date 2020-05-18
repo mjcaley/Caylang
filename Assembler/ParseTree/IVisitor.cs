@@ -13,6 +13,8 @@ namespace Caylang.Assembler.ParseTree
         void Visit(NullaryInstruction n);
         void Visit(UnaryInstruction u);
 
+        void Visit(UnaryExpression u);
+
         void Visit(Integer8Literal i);
         void Visit(Integer16Literal i);
         void Visit(Integer32Literal i);
@@ -44,6 +46,9 @@ namespace Caylang.Assembler.ParseTree
                     break;
                 case Statement s:
                     Visit(s);
+                    break;
+                case UnaryExpression u:
+                    Visit(u);
                     break;
                 case Literal l:
                     Visit(l);
@@ -77,6 +82,11 @@ namespace Caylang.Assembler.ParseTree
         }
 
         public virtual void Visit(UnaryInstruction u)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual void Visit(UnaryExpression u)
         {
             throw new NotImplementedException();
         }

@@ -76,7 +76,7 @@ namespace Caylang.Assembler.Tests
             Assert.IsType<Definition>(result);
             var definition = result as Definition;
             Assert.Equal(definition?.Name, constant);
-            Assert.IsType<Integer8Literal>(definition?.Value);
+            Assert.IsType<UnaryExpression>(definition?.Value);
         }
 
         [Fact]
@@ -436,9 +436,9 @@ namespace Caylang.Assembler.Tests
             });
             var result = parser.ParseLiteral();
 
-            Assert.IsType<Integer8Literal>(result);
-            var literal = result as Integer8Literal;
-            Assert.Equal(fortyTwo, literal?.Atom);
+            Assert.IsType<UnaryExpression>(result);
+            var literal = result as UnaryExpression;
+            Assert.Equal(fortyTwo, literal?.Expression?.Atom);
             Assert.Same(Eof, parser.Current);
         }
 
@@ -455,9 +455,9 @@ namespace Caylang.Assembler.Tests
             });
             var result = parser.ParseLiteral();
 
-            Assert.IsType<Integer16Literal>(result);
-            var literal = result as Integer16Literal;
-            Assert.Equal(fortyTwo, literal?.Atom);
+            Assert.IsType<UnaryExpression>(result);
+            var literal = result as UnaryExpression;
+            Assert.Equal(fortyTwo, literal?.Expression?.Atom);
             Assert.Same(Eof, parser.Current);
         }
 
@@ -474,9 +474,9 @@ namespace Caylang.Assembler.Tests
             });
             var result = parser.ParseLiteral();
 
-            Assert.IsType<Integer32Literal>(result);
-            var literal = result as Integer32Literal;
-            Assert.Equal(fortyTwo, literal?.Atom);
+            Assert.IsType<UnaryExpression>(result);
+            var literal = result as UnaryExpression;
+            Assert.Equal(fortyTwo, literal?.Expression?.Atom);
             Assert.Same(Eof, parser.Current);
         }
 
@@ -493,9 +493,9 @@ namespace Caylang.Assembler.Tests
             });
             var result = parser.ParseLiteral();
 
-            Assert.IsType<Integer64Literal>(result);
-            var literal = result as Integer64Literal;
-            Assert.Equal(fortyTwo, literal?.Atom);
+            Assert.IsType<UnaryExpression>(result);
+            var literal = result as UnaryExpression;
+            Assert.Equal(fortyTwo, literal?.Expression?.Atom);
             Assert.Same(Eof, parser.Current);
         }
 
@@ -512,9 +512,9 @@ namespace Caylang.Assembler.Tests
             });
             var result = parser.ParseLiteral();
 
-            Assert.IsType<UnsignedInteger8Literal>(result);
-            var literal = result as UnsignedInteger8Literal;
-            Assert.Equal(fortyTwo, literal?.Atom);
+            Assert.IsType<UnaryExpression>(result);
+            var literal = result as UnaryExpression;
+            Assert.Equal(fortyTwo, literal?.Expression?.Atom);
             Assert.Same(Eof, parser.Current);
         }
 
@@ -531,9 +531,9 @@ namespace Caylang.Assembler.Tests
             });
             var result = parser.ParseLiteral();
 
-            Assert.IsType<UnsignedInteger16Literal>(result);
-            var literal = result as UnsignedInteger16Literal;
-            Assert.Equal(fortyTwo, literal?.Atom);
+            Assert.IsType<UnaryExpression>(result);
+            var literal = result as UnaryExpression;
+            Assert.Equal(fortyTwo, literal?.Expression?.Atom);
             Assert.Same(Eof, parser.Current);
         }
 
@@ -550,9 +550,9 @@ namespace Caylang.Assembler.Tests
             });
             var result = parser.ParseLiteral();
 
-            Assert.IsType<UnsignedInteger32Literal>(result);
-            var literal = result as UnsignedInteger32Literal;
-            Assert.Equal(fortyTwo, literal?.Atom);
+            Assert.IsType<UnaryExpression>(result);
+            var literal = result as UnaryExpression;
+            Assert.Equal(fortyTwo, literal?.Expression?.Atom);
             Assert.Same(Eof, parser.Current);
         }
 
@@ -569,9 +569,9 @@ namespace Caylang.Assembler.Tests
             });
             var result = parser.ParseLiteral();
 
-            Assert.IsType<UnsignedInteger64Literal>(result);
-            var literal = result as UnsignedInteger64Literal;
-            Assert.Equal(fortyTwo, literal?.Atom);
+            Assert.IsType<UnaryExpression>(result);
+            var literal = result as UnaryExpression;
+            Assert.Equal(fortyTwo, literal?.Expression?.Atom);
             Assert.Same(Eof, parser.Current);
         }
 
@@ -611,9 +611,9 @@ namespace Caylang.Assembler.Tests
             });
             var result = parser.ParseLiteral();
 
-            Assert.IsType<Float32Literal>(result);
-            var literal = result as Float32Literal;
-            Assert.Equal(fortyTwo, literal?.Atom);
+            Assert.IsType<UnaryExpression>(result);
+            var literal = result as UnaryExpression;
+            Assert.Equal(fortyTwo, literal?.Expression?.Atom);
             Assert.Same(Eof, parser.Current);
         }
 
@@ -630,9 +630,9 @@ namespace Caylang.Assembler.Tests
             });
             var result = parser.ParseLiteral();
 
-            Assert.IsType<Float64Literal>(result);
-            var literal = result as Float64Literal;
-            Assert.Equal(fortyTwo, literal?.Atom);
+            Assert.IsType<UnaryExpression>(result);
+            var literal = result as UnaryExpression;
+            Assert.Equal(fortyTwo, literal?.Expression?.Atom);
             Assert.Same(Eof, parser.Current);
         }
 

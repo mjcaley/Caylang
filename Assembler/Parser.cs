@@ -217,9 +217,9 @@ namespace Caylang.Assembler
         public ParseNode ParseDefinition()
         {
             if (
-                Expect(TokenType.Define, out var _) &&
+                Expect(TokenType.Define, out _) &&
                 Expect(TokenType.Identifier, out var name) &&
-                Expect(TokenType.Equal, out var _)
+                Expect(TokenType.Equal, out _)
             )
             {
                 var operand = ParseLiteral();
@@ -232,15 +232,15 @@ namespace Caylang.Assembler
         public ParseNode ParseFunction()
         {
             if (
-                Expect(TokenType.Func, out var _) &&
+                Expect(TokenType.Func, out _) &&
                 Expect(TokenType.Identifier, out var name) &&
 
-                Expect(TokenType.Locals, out var _) &&
-                Expect(TokenType.Equal, out var _) &&
+                Expect(TokenType.Locals, out _) &&
+                Expect(TokenType.Equal, out _) &&
                 Expect(TokenType.IntegerLiteral, out var locals) &&
                 
-                Expect(TokenType.Args, out var _) &&
-                Expect(TokenType.Equal, out var _) &&
+                Expect(TokenType.Args, out _) &&
+                Expect(TokenType.Equal, out _) &&
                 Expect(TokenType.IntegerLiteral, out var args)
                 )
             {
@@ -280,7 +280,7 @@ namespace Caylang.Assembler
 
         public ParseNode ParseLabel()
         {
-                if (Expect(TokenType.Identifier, out var name) && Expect(TokenType.Colon, out var _))
+                if (Expect(TokenType.Identifier, out var name) && Expect(TokenType.Colon, out _))
                 {
                     return new LabelStatement(name);
                 }
@@ -332,12 +332,27 @@ namespace Caylang.Assembler
         public ParseNode ParseLiteral() =>
             Current?.Type switch
             {
-                TokenType.IntegerLiteral => ParseIntegerLiteral(),
-                TokenType.FloatLiteral => ParseFloatLiteral(),
                 TokenType.StringLiteral => ParseStringLiteral(),
                 TokenType.Identifier => ParseIdentifierLiteral(),
+                TokenType.Negative => ParseNumberLiteral(),
+                TokenType.IntegerLiteral => ParseNumberLiteral(),
+                TokenType.FloatLiteral => ParseNumberLiteral(),
                 _ => new UnexpectedTokenError(Current)
             };
+
+        private ParseNode ParseNumberLiteral()
+        {
+            Expect(TokenType.Negative, out var op);
+
+            var numberLiteral = Current?.Type switch
+            {
+                TokenType.IntegerLiteral => ParseIntegerLiteral(),
+                TokenType.FloatLiteral => ParseFloatLiteral(),
+                _ => new UnexpectedTokenError(Current)
+            };
+            
+            return new UnaryExpression(op, numberLiteral);
+        }
 
         public ParseNode ParseIntegerLiteral()
         {

@@ -155,7 +155,7 @@ namespace Caylang.Assembler
                 _ when char.IsWhiteSpace(Current) => Transition(SkipWhitespace).Emit(),
                 '=' => Skip().Emit(TokenType.Equal),
                 ':' => Skip().Emit(TokenType.Colon),
-                '-' => Append().Transition(Negative).Emit(),
+                '-' => Skip().Emit(TokenType.Negative),
                 '.' => ReplaceLexeme(_ => "0").Append().Transition(FloatNumber).Emit(),
                 '0' => Append().Transition(NumberBase).Emit(),
                 var x when 
@@ -194,16 +194,8 @@ namespace Caylang.Assembler
                 var x when x == '0' || x == '1' => Append().Emit(),
                 _ => ReplaceLexeme(lexeme =>
                 {
-                    if (lexeme.StartsWith('-'))
-                    {
-                        var integer = Convert.ToInt64(lexeme, 2);
-                        return integer.ToString(CultureInfo.InvariantCulture);
-                    }
-                    else
-                    {
-                        var integer = Convert.ToUInt64(lexeme, 2);
-                        return integer.ToString(CultureInfo.InvariantCulture);
-                    }
+                    var integer = Convert.ToUInt64(lexeme, 2);
+                    return integer.ToString(CultureInfo.InvariantCulture);
                 }).Transition(Start).ConsumeAndEmit(TokenType.IntegerLiteral)
             };
 

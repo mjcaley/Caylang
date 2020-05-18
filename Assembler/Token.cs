@@ -43,7 +43,6 @@ namespace Caylang.Assembler
 
         // Types
         VoidType,
-        PointerType,
         Integer8Type,
         UInteger8Type,
         Integer16Type,
@@ -70,6 +69,7 @@ namespace Caylang.Assembler
         Define,
         Equal,
         Colon,
+        Negative,
 
         EndOfFile
     }
