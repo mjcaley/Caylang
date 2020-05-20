@@ -6,6 +6,11 @@ namespace Caylang.Assembler.ParseTree
 {
 	public class Literal : ParseNode
 	{
+		public Literal(Token atom, IEnumerable<ParseNode> children) : base(children) => Atom = atom;
+
+		public Literal(Token atom, params ParseNode[] children) : base(children) => Atom = atom;
+
+
 		public Literal(Token atom) => Atom = atom;
 		
 		public Token Atom { get; }
@@ -13,6 +18,11 @@ namespace Caylang.Assembler.ParseTree
 	
 	public class Integer8Literal : Literal
 	{
+		public Integer8Literal(Token atom, IEnumerable<ParseNode> children) : base(atom, children) { }
+
+		public Integer8Literal(Token atom, params ParseNode[] children) : base(atom, children) { }
+
+
 		public Integer8Literal(Token atom) : base(atom) { }
 
 		public byte? Cast
@@ -33,6 +43,11 @@ namespace Caylang.Assembler.ParseTree
 	
 	public class Integer16Literal : Literal
 	{
+		public Integer16Literal(Token atom, IEnumerable<ParseNode> children) : base(atom, children) { }
+
+		public Integer16Literal(Token atom, params ParseNode[] children) : base(atom, children) { }
+
+
 		public Integer16Literal(Token atom) : base(atom) { }
 
 		public short? Cast
@@ -53,6 +68,11 @@ namespace Caylang.Assembler.ParseTree
 	
 	public class Integer32Literal : Literal
 	{
+		public Integer32Literal(Token atom, IEnumerable<ParseNode> children) : base(atom, children) { }
+
+		public Integer32Literal(Token atom, params ParseNode[] children) : base(atom, children) { }
+
+
 		public Integer32Literal(Token atom) : base(atom) { }
 
 		public int? CastValue
@@ -73,6 +93,11 @@ namespace Caylang.Assembler.ParseTree
 	
 	public class Integer64Literal : Literal
 	{
+		public Integer64Literal(Token atom, IEnumerable<ParseNode> children) : base(atom, children) { }
+
+		public Integer64Literal(Token atom, params ParseNode[] children) : base(atom, children) { }
+
+
 		public Integer64Literal(Token atom) : base(atom) { }
 
 		public long? Cast
@@ -93,6 +118,11 @@ namespace Caylang.Assembler.ParseTree
 	
 	public class UnsignedInteger8Literal : Literal
 	{
+		public UnsignedInteger8Literal(Token atom, IEnumerable<ParseNode> children) : base(atom, children) { }
+
+		public UnsignedInteger8Literal(Token atom, params ParseNode[] children) : base(atom, children) { }
+
+
 		public UnsignedInteger8Literal(Token atom) : base(atom) { }
 
 		public byte? Cast
@@ -113,6 +143,11 @@ namespace Caylang.Assembler.ParseTree
 	
 	public class UnsignedInteger16Literal : Literal
 	{
+		public UnsignedInteger16Literal(Token atom, IEnumerable<ParseNode> children) : base(atom, children) { }
+
+		public UnsignedInteger16Literal(Token atom, params ParseNode[] children) : base(atom, children) { }
+
+
 		public UnsignedInteger16Literal(Token atom) : base(atom) { }
 
 		public short? Cast
@@ -133,6 +168,10 @@ namespace Caylang.Assembler.ParseTree
 	
 	public class UnsignedInteger32Literal : Literal
 	{
+		public UnsignedInteger32Literal(Token atom, IEnumerable<ParseNode> children) : base(atom, children) { }
+
+		public UnsignedInteger32Literal(Token atom, params ParseNode[] children) : base(atom, children) { }
+
 		public UnsignedInteger32Literal(Token atom) : base(atom) { }
 
 		public int? CastValue
@@ -153,6 +192,11 @@ namespace Caylang.Assembler.ParseTree
 	
 	public class UnsignedInteger64Literal : Literal
 	{
+		public UnsignedInteger64Literal(Token atom, IEnumerable<ParseNode> children) : base(atom, children) { }
+
+		public UnsignedInteger64Literal(Token atom, params ParseNode[] children) : base(atom, children) { }
+
+
 		public UnsignedInteger64Literal(Token atom) : base(atom) { }
 
 		public long? Cast
@@ -173,6 +217,11 @@ namespace Caylang.Assembler.ParseTree
 
 	public class Float32Literal : Literal
 	{
+		public Float32Literal(Token atom, IEnumerable<ParseNode> children) : base(atom, children) { }
+
+		public Float32Literal(Token atom, params ParseNode[] children) : base(atom, children) { }
+
+
 		public Float32Literal(Token atom) : base(atom) { }
 
 		public float? CastValue
@@ -193,6 +242,11 @@ namespace Caylang.Assembler.ParseTree
 
 	public class Float64Literal : Literal
 	{
+		public Float64Literal(Token atom, IEnumerable<ParseNode> children) : base(atom, children) { }
+
+		public Float64Literal(Token atom, params ParseNode[] children) : base(atom, children) { }
+
+
 		public Float64Literal(Token atom) : base(atom) { }
 
 		public decimal? CastValue
@@ -213,6 +267,11 @@ namespace Caylang.Assembler.ParseTree
 
 	public class StringLiteral : Literal
 	{
+		public StringLiteral(Token atom, IEnumerable<ParseNode> children) : base(atom, children) { }
+
+		public StringLiteral(Token atom, params ParseNode[] children) : base(atom, children) { }
+
+
 		public StringLiteral(Token atom) : base(atom) { }
 		
 		public string Value => Atom.Value;
@@ -220,6 +279,10 @@ namespace Caylang.Assembler.ParseTree
 
 	public class IdentifierLiteral : Literal
 	{
+		public IdentifierLiteral(Token atom, IEnumerable<ParseNode> children) : base(atom, children) { }
+
+		public IdentifierLiteral(Token atom, params ParseNode[] children) : base(atom, children) { }
+
 		public IdentifierLiteral(Token atom) : base(atom) { }
 		
 		public string Value => Atom.Value;

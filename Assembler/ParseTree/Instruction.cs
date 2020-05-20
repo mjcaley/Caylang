@@ -9,7 +9,15 @@ namespace Caylang.Assembler.ParseTree
 	{
 		public NullaryInstruction(Token instruction, Token returnType)
 			=> (Instruction, ReturnType) = (instruction, returnType);
+
+		public NullaryInstruction(Token instruction, Token returnType, IEnumerable<ParseNode> children)
+			: base(children)
+			=> (Instruction, ReturnType) = (instruction, returnType);
 		
+		public NullaryInstruction(Token instruction, Token returnType, params ParseNode[] children)
+					: base(children)
+					=> (Instruction, ReturnType) = (instruction, returnType);
+
 		public Token Instruction { get; }
 		public Token ReturnType { get; }
 	}
@@ -19,7 +27,15 @@ namespace Caylang.Assembler.ParseTree
 		public UnaryInstruction(Token instruction, Token returnType, ParseNode operand)
 			: base(operand)
 			=> (Instruction, ReturnType) = (instruction, returnType);
-		
+
+		public UnaryInstruction(Token instruction, Token returnType, IEnumerable<ParseNode> children)
+			: base(children)
+			=> (Instruction, ReturnType) = (instruction, returnType);
+
+		public UnaryInstruction(Token instruction, Token returnType, params ParseNode[] children)
+			: base(children)
+			=> (Instruction, ReturnType) = (instruction, returnType);
+
 		public Token Instruction { get; }
 		public Token ReturnType { get; }
 

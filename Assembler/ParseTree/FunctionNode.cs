@@ -9,6 +9,8 @@ namespace Caylang.Assembler.ParseTree
 	{
 		public FunctionNode(Token name, Token locals, Token arguments, IEnumerable<ParseNode> statements) : base(statements) => (Name, Locals, Arguments) = (name, locals, arguments);
 
+		public FunctionNode(Token name, Token locals, Token arguments, params ParseNode[] statements) : base(statements) => (Name, Locals, Arguments) = (name, locals, arguments);
+
 		public Token Name { get; }
 
 		public Token Locals { get; }

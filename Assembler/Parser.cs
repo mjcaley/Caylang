@@ -191,27 +191,25 @@ namespace Caylang.Assembler
         #region Recursive descent methods
         public ParseNode Start()
         {
-            var definitions = new List<ParseNode>();
-            var functions = new List<ParseNode>();
-            var errors = new List<ParseNode>();
+            var nodes = new List<ParseNode>();
 
             while (!Match(TokenType.EndOfFile))
             {
                 if (Match(TokenType.Func))
                 {
-                    functions.Add(ParseFunction());
+                    nodes.Add(ParseFunction());
                 }
                 else if (Match(TokenType.Define))
                 {
-                    definitions.Add(ParseDefinition());
+                    nodes.Add(ParseDefinition());
                 }
                 else
                 {
-                    errors.Add(new UnexpectedTokenError(CollectUntil(StatementTypes)));
+                    nodes.Add(new UnexpectedTokenError(CollectUntil(StatementTypes)));
                 }
             }
 
-            return new Tree(definitions, functions, errors);
+            return new Tree(nodes);
         }
 
         public ParseNode ParseDefinition()

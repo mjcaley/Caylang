@@ -10,7 +10,7 @@ namespace Caylang.Assembler.ParseTree
 
         protected ParseNode(IEnumerable<ParseNode> children) => _children = children.ToList();
 
-        protected ParseNode(ParseNode child) : this(new[] { child }) { }
+        protected ParseNode(params ParseNode[] children) => _children = children.ToList();
 
         private readonly List<ParseNode> _children;
         public List<ParseNode> Children => _children;
