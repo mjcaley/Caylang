@@ -245,6 +245,7 @@ namespace Caylang.Assembler.Tests
         [Theory]
         [InlineData("=", TokenType.Equal)]
         [InlineData(":", TokenType.Colon)]
+        [InlineData(",", TokenType.Comma)]
         public void StartReturnsToken(string input, TokenType type)
         {
             using var testInput = new StringReader(input);
@@ -459,8 +460,8 @@ namespace Caylang.Assembler.Tests
             var token = lexer.NumberBase();
             
             Assert.NotNull(token);
-            Assert.Equal(TokenType.IntegerLiteral, token.Type);
-            Assert.Equal("0", token.Value);
+            Assert.Equal(TokenType.IntegerLiteral, token?.Type);
+            Assert.Equal("0", token?.Value);
             Assert.Equal(lexer.Start, lexer.Mode);
             Assert.NotEqual('0', lexer.Current);
             Assert.Empty(lexer.Lexeme.ToString());
@@ -880,11 +881,14 @@ namespace Caylang.Assembler.Tests
         [InlineData("jmpt", TokenType.JumpTrue)]
         [InlineData("jmpf", TokenType.JumpFalse)]
         [InlineData("callfunc", TokenType.CallFunc)]
-        [InlineData("callinterface", TokenType.CallInterface)]
+        [InlineData("callvirt", TokenType.CallVirtual)]
         [InlineData("ret", TokenType.Return)]
         [InlineData("newstruct", TokenType.NewStruct)]
         [InlineData("ldfield", TokenType.LoadField)]
         [InlineData("stfield", TokenType.StoreField)]
+        [InlineData("newarray", TokenType.NewArray)]
+        [InlineData("ldelem", TokenType.LoadElement)]
+        [InlineData("stelem", TokenType.StoreElement)]
         [InlineData("addr", TokenType.AddressType)]
         [InlineData("i8", TokenType.Integer8Type)]
         [InlineData("u8", TokenType.UInteger8Type)]
@@ -948,6 +952,7 @@ namespace Caylang.Assembler.Tests
         
         [InlineData("func", TokenType.Func)]
         [InlineData("define", TokenType.Define)]
+        [InlineData("struct", TokenType.Struct)]
         [InlineData("args", TokenType.Args)]
         [InlineData("locals", TokenType.Locals)]
         [InlineData("halt", TokenType.Halt)]
@@ -969,12 +974,14 @@ namespace Caylang.Assembler.Tests
         [InlineData("jmpt", TokenType.JumpTrue)]
         [InlineData("jmpf", TokenType.JumpFalse)]
         [InlineData("callfunc", TokenType.CallFunc)]
-        [InlineData("callinterface", TokenType.CallInterface)]
+        [InlineData("callvirt", TokenType.CallVirtual)]
         [InlineData("ret", TokenType.Return)]
         [InlineData("newstruct", TokenType.NewStruct)]
         [InlineData("ldfield", TokenType.LoadField)]
         [InlineData("stfield", TokenType.StoreField)]
         [InlineData("newarray", TokenType.NewArray)]
+        [InlineData("ldelem", TokenType.LoadElement)]
+        [InlineData("stelem", TokenType.StoreElement)]
         [InlineData("addr", TokenType.AddressType)]
         [InlineData("i8", TokenType.Integer8Type)]
         [InlineData("u8", TokenType.UInteger8Type)]

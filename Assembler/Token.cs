@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Caylang.Assembler;
 
 namespace Caylang.Assembler
@@ -32,7 +32,7 @@ namespace Caylang.Assembler
         JumpFalse,
 
         CallFunc,
-        CallInterface,
+        CallVirtual,
 
         Return,
 
@@ -40,6 +40,8 @@ namespace Caylang.Assembler
         LoadField,
         StoreField,
         NewArray,
+        LoadElement,
+        StoreElement,
 
         // Types
         VoidType,
@@ -67,8 +69,10 @@ namespace Caylang.Assembler
         Args,
         Locals,
         Define,
+        Struct,
         Equal,
         Colon,
+        Comma,
         Negative,
 
         EndOfFile

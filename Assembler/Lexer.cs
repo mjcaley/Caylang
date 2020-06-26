@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -23,7 +23,7 @@ namespace Caylang.Assembler
             Mode = Start;
         }
 
-        public Func<Token?> Mode { get; set; }
+        public Func<Token?>? Mode { get; set; }
 
         public StringBuilder Lexeme { get; } = new StringBuilder();
 
@@ -155,6 +155,7 @@ namespace Caylang.Assembler
                 _ when char.IsWhiteSpace(Current) => Transition(SkipWhitespace).Emit(),
                 '=' => Skip().Emit(TokenType.Equal),
                 ':' => Skip().Emit(TokenType.Colon),
+                ',' => Skip().Emit(TokenType.Comma),
                 '-' => Skip().Emit(TokenType.Negative),
                 '.' => ReplaceLexeme(_ => "0").Append().Transition(FloatNumber).Emit(),
                 '0' => Append().Transition(NumberBase).Emit(),
@@ -259,6 +260,7 @@ namespace Caylang.Assembler
                 {
                     "func" => Transition(Start).Discard().Emit(TokenType.Func),
                     "define" => Transition(Start).Discard().Emit(TokenType.Define),
+                    "struct" => Transition(Start).Discard().Emit(TokenType.Struct),
                     "args" => Transition(Start).Discard().Emit(TokenType.Args),
                     "locals" => Transition(Start).Discard().Emit(TokenType.Locals),
                     "halt" => Transition(Start).Discard().Emit(TokenType.Halt),
@@ -280,12 +282,14 @@ namespace Caylang.Assembler
                     "jmpt" => Transition(Start).Discard().Emit(TokenType.JumpTrue),
                     "jmpf" => Transition(Start).Discard().Emit(TokenType.JumpFalse),
                     "callfunc" => Transition(Start).Discard().Emit(TokenType.CallFunc),
-                    "callinterface" => Transition(Start).Discard().Emit(TokenType.CallInterface),
+                    "callvirt" => Transition(Start).Discard().Emit(TokenType.CallVirtual),
                     "ret" => Transition(Start).Discard().Emit(TokenType.Return),
                     "newstruct" => Transition(Start).Discard().Emit(TokenType.NewStruct),
                     "ldfield" => Transition(Start).Discard().Emit(TokenType.LoadField),
                     "stfield" => Transition(Start).Discard().Emit(TokenType.StoreField),
                     "newarray" => Transition(Start).Discard().Emit(TokenType.NewArray),
+                    "ldelem" => Transition(Start).Discard().Emit(TokenType.LoadElement),
+                    "stelem" => Transition(Start).Discard().Emit(TokenType.StoreElement),
                     "addr" => Transition(Start).Discard().Emit(TokenType.AddressType),
                     "i8" => Transition(Start).Discard().Emit(TokenType.Integer8Type),
                     "u8" => Transition(Start).Discard().Emit(TokenType.UInteger8Type),

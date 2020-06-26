@@ -1,17 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
 namespace Caylang.Assembler.ParseTree
 {
-	public class LabelStatement : Statement
-	{
-		public LabelStatement(Token label, IEnumerable<ParseNode> children) : base(children) => Label = label;
+    public class Label : Statement
+    {
+        public Label(string name, int line) : base(line) => Name = name;
+        
+        public string Name { get; }
 
-		public LabelStatement(Token label, params ParseNode[] children) : base(children) => Label = label;
-
-		public LabelStatement(Token label) => Label = label;
-
-		public Token Label { get; }
-	}
+        public override string ToString()
+        {
+            return $"{GetType()} Name: {Name}";
+        }
+    }
 }

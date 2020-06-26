@@ -1,290 +1,81 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+using System;
 
 namespace Caylang.Assembler.ParseTree
 {
-	public class Literal : ParseNode
-	{
-		public Literal(Token atom, IEnumerable<ParseNode> children) : base(children) => Atom = atom;
+    public class Literal : ParseNode
+    {
+        public Literal(int line) : base(line) { }
+    }
 
-		public Literal(Token atom, params ParseNode[] children) : base(children) => Atom = atom;
+    public abstract class TypedLiteral<T> : Literal
+    {
+        protected internal TypedLiteral(T value, int line) : base(line) => Value = value;
 
+        public T Value { get; }
 
-		public Literal(Token atom) => Atom = atom;
-		
-		public Token Atom { get; }
-	}
-	
-	public class Integer8Literal : Literal
-	{
-		public Integer8Literal(Token atom, IEnumerable<ParseNode> children) : base(atom, children) { }
+        public override string ToString()
+        {
+            return $"{GetType()} Value: {Value}";
+        }
+    }
 
-		public Integer8Literal(Token atom, params ParseNode[] children) : base(atom, children) { }
+    public class Integer8Literal : TypedLiteral<sbyte>
+    {
+        public Integer8Literal(sbyte value, int line) : base(value, line) { }
+    }
 
+    public class Integer16Literal : TypedLiteral<short>
+    {
+        public Integer16Literal(short value, int line) : base(value, line) { }
+    }
 
-		public Integer8Literal(Token atom) : base(atom) { }
+    public class Integer32Literal : TypedLiteral<int>
+    {
+        public Integer32Literal(int value, int line) : base(value, line) { }
+    }
 
-		public byte? Cast
-		{
-			get
-			{
-				var converted = byte.TryParse(Atom.Value, out var number);
+    public class Integer64Literal : TypedLiteral<long>
+    {
+        public Integer64Literal(long value, int line) : base(value, line) { }
+    }
 
-				if (converted)
-				{
-					return number;
-				}
-				
-				return null;
-			}
-		}
-	}
-	
-	public class Integer16Literal : Literal
-	{
-		public Integer16Literal(Token atom, IEnumerable<ParseNode> children) : base(atom, children) { }
+    public class UnsignedInteger8Literal : TypedLiteral<byte>
+    {
+        public UnsignedInteger8Literal(byte value, int line) : base(value, line) { }
+    }
 
-		public Integer16Literal(Token atom, params ParseNode[] children) : base(atom, children) { }
+    public class UnsignedInteger16Literal : TypedLiteral<ushort>
+    {
+        public UnsignedInteger16Literal(ushort value, int line) : base(value, line) { }
+    }
 
+    public class UnsignedInteger32Literal : TypedLiteral<uint>
+    {
+        public UnsignedInteger32Literal(uint value, int line) : base(value, line) { }
+    }
 
-		public Integer16Literal(Token atom) : base(atom) { }
+    public class UnsignedInteger64Literal : TypedLiteral<ulong>
+    {
+        public UnsignedInteger64Literal(ulong value, int line) : base(value, line) { }
+    }
 
-		public short? Cast
-		{
-			get
-			{
-				var converted = short.TryParse(Atom.Value, out var number);
+    public class Float32Literal : TypedLiteral<float>
+    {
+        public Float32Literal(float value, int line) : base(value, line) { }
+    }
 
-				if (converted)
-				{
-					return number;
-				}
-				
-				return null;
-			}
-		}
-	}
-	
-	public class Integer32Literal : Literal
-	{
-		public Integer32Literal(Token atom, IEnumerable<ParseNode> children) : base(atom, children) { }
+    public class Float64Literal : TypedLiteral<double>
+    {
+        public Float64Literal(double value, int line) : base(value, line) { }
+    }
 
-		public Integer32Literal(Token atom, params ParseNode[] children) : base(atom, children) { }
+    public class StringLiteral : TypedLiteral<string>
+    {
+        public StringLiteral(string value, int line) : base(value, line) { }
+    }
 
-
-		public Integer32Literal(Token atom) : base(atom) { }
-
-		public int? CastValue
-		{
-			get
-			{
-				var converted = int.TryParse(Atom.Value, out var number);
-
-				if (converted)
-				{
-					return number;
-				}
-				
-				return null;
-			}
-		}
-	}
-	
-	public class Integer64Literal : Literal
-	{
-		public Integer64Literal(Token atom, IEnumerable<ParseNode> children) : base(atom, children) { }
-
-		public Integer64Literal(Token atom, params ParseNode[] children) : base(atom, children) { }
-
-
-		public Integer64Literal(Token atom) : base(atom) { }
-
-		public long? Cast
-		{
-			get
-			{
-				var converted = long.TryParse(Atom.Value, out var number);
-
-				if (converted)
-				{
-					return number;
-				}
-				
-				return null;
-			}
-		}
-	}
-	
-	public class UnsignedInteger8Literal : Literal
-	{
-		public UnsignedInteger8Literal(Token atom, IEnumerable<ParseNode> children) : base(atom, children) { }
-
-		public UnsignedInteger8Literal(Token atom, params ParseNode[] children) : base(atom, children) { }
-
-
-		public UnsignedInteger8Literal(Token atom) : base(atom) { }
-
-		public byte? Cast
-		{
-			get
-			{
-				var converted = byte.TryParse(Atom.Value, out var number);
-
-				if (converted)
-				{
-					return number;
-				}
-				
-				return null;
-			}
-		}
-	}
-	
-	public class UnsignedInteger16Literal : Literal
-	{
-		public UnsignedInteger16Literal(Token atom, IEnumerable<ParseNode> children) : base(atom, children) { }
-
-		public UnsignedInteger16Literal(Token atom, params ParseNode[] children) : base(atom, children) { }
-
-
-		public UnsignedInteger16Literal(Token atom) : base(atom) { }
-
-		public short? Cast
-		{
-			get
-			{
-				var converted = short.TryParse(Atom.Value, out var number);
-
-				if (converted)
-				{
-					return number;
-				}
-				
-				return null;
-			}
-		}
-	}
-	
-	public class UnsignedInteger32Literal : Literal
-	{
-		public UnsignedInteger32Literal(Token atom, IEnumerable<ParseNode> children) : base(atom, children) { }
-
-		public UnsignedInteger32Literal(Token atom, params ParseNode[] children) : base(atom, children) { }
-
-		public UnsignedInteger32Literal(Token atom) : base(atom) { }
-
-		public int? CastValue
-		{
-			get
-			{
-				var converted = int.TryParse(Atom.Value, out var number);
-
-				if (converted)
-				{
-					return number;
-				}
-				
-				return null;
-			}
-		}
-	}
-	
-	public class UnsignedInteger64Literal : Literal
-	{
-		public UnsignedInteger64Literal(Token atom, IEnumerable<ParseNode> children) : base(atom, children) { }
-
-		public UnsignedInteger64Literal(Token atom, params ParseNode[] children) : base(atom, children) { }
-
-
-		public UnsignedInteger64Literal(Token atom) : base(atom) { }
-
-		public long? Cast
-		{
-			get
-			{
-				var converted = long.TryParse(Atom.Value, out var number);
-
-				if (converted)
-				{
-					return number;
-				}
-				
-				return null;
-			}
-		}
-	}
-
-	public class Float32Literal : Literal
-	{
-		public Float32Literal(Token atom, IEnumerable<ParseNode> children) : base(atom, children) { }
-
-		public Float32Literal(Token atom, params ParseNode[] children) : base(atom, children) { }
-
-
-		public Float32Literal(Token atom) : base(atom) { }
-
-		public float? CastValue
-		{
-			get
-			{
-				var converted = float.TryParse(Atom.Value, out var number);
-
-				if (converted)
-				{
-					return number;
-				}
-				
-				return null;
-			}
-		}
-	}
-
-	public class Float64Literal : Literal
-	{
-		public Float64Literal(Token atom, IEnumerable<ParseNode> children) : base(atom, children) { }
-
-		public Float64Literal(Token atom, params ParseNode[] children) : base(atom, children) { }
-
-
-		public Float64Literal(Token atom) : base(atom) { }
-
-		public decimal? CastValue
-		{
-			get
-			{
-				var converted = decimal.TryParse(Atom.Value, out var number);
-
-				if (converted)
-				{
-					return number;
-				}
-				
-				return null;
-			}
-		}
-	}
-
-	public class StringLiteral : Literal
-	{
-		public StringLiteral(Token atom, IEnumerable<ParseNode> children) : base(atom, children) { }
-
-		public StringLiteral(Token atom, params ParseNode[] children) : base(atom, children) { }
-
-
-		public StringLiteral(Token atom) : base(atom) { }
-		
-		public string Value => Atom.Value;
-	}
-
-	public class IdentifierLiteral : Literal
-	{
-		public IdentifierLiteral(Token atom, IEnumerable<ParseNode> children) : base(atom, children) { }
-
-		public IdentifierLiteral(Token atom, params ParseNode[] children) : base(atom, children) { }
-
-		public IdentifierLiteral(Token atom) : base(atom) { }
-		
-		public string Value => Atom.Value;
-	}
+    public class IdentifierLiteral : TypedLiteral<string>
+    {
+        public IdentifierLiteral(string name, int line) : base(name, line) { }
+    }
 }
