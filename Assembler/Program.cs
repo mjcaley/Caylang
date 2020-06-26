@@ -20,7 +20,7 @@ func Increment args=0 locals=1
 ");
             var tree = Parser.Start.ParseOrThrow(tokens);
 
-            ParseTree.IVisitor printer = new ParseTreePrinter();
+            var printer = new ParseTreePrinter();
             printer.Visit(tree);
         }
     }

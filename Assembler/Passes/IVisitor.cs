@@ -1,6 +1,7 @@
+using Caylang.Assembler.ParseTree;
 using System.Collections.Generic;
 
-namespace Caylang.Assembler.ParseTree
+namespace Caylang.Assembler.Passes
 {
     public interface IVisitor
     {
