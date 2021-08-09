@@ -83,6 +83,7 @@ namespace Caylang.Assembler.Tests
 			var result = parser.ParseFunction();
 
 			Assert.True(result.IsOk);
+			Assert.Equal("function", result.Ok.Value.Kind);
 		}
 
 		[Fact]
