@@ -4,7 +4,7 @@ using Yoakke.Lexer.Attributes;
 namespace Caylang.Assembler
 {
 	[Lexer("AsmLexer")]
-	public enum TokenType2
+	public enum TokenType
 	{
 		[Error] Error,
 		[End] End,
@@ -67,7 +67,7 @@ namespace Caylang.Assembler
 		[Token("-")] Minus,
 		[Token("+")] Plus,
 
-		[Regex(@"[1-9][0-9]*")] DecIntegerLit,
+		[Regex(@"0|([1-9][0-9]*)")] DecIntegerLit,
 		[Regex(Regexes.HexLiteral)] HexIntegerLit,
 		[Regex(@"0b[01]+")] BinIntegerLit,
 		[Regex(@"(0|([1-9][0-9]*)).[0-9]*")] FloatLit,
