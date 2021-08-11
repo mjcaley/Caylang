@@ -6,7 +6,7 @@ namespace Caylang.Assembler.Tests
 	public class ParserTests
 	{
 		[Fact]
-		public void StartNode()
+		public void ModuleNode()
 		{
 			var testData = @"
 				struct Structure
@@ -19,11 +19,11 @@ namespace Caylang.Assembler.Tests
 			";
 			var lexer = new AsmLexer(testData);
 			var parser = new AsmParser(lexer);
-			var result = parser.ParseStart();
+			var result = parser.ParseModule();
 
 			Assert.True(result.IsOk);
 			var node = Assert.IsType<ParseTreeBranch>(result.Ok.Value);
-			Assert.Equal("start", node.Kind);
+			Assert.Equal("module", node.Kind);
 			Assert.NotEmpty(node.Children);
 			Assert.Collection(node.Children,
 				c => Assert.Equal("struct", c.Kind),

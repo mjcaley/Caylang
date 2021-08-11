@@ -11,9 +11,9 @@ namespace Caylang.Assembler
     [Parser(typeof(TokenType))]
     public partial class AsmParser
     {
-        [Rule("start : block*")]
-        public static ParseTreeBranch Start(IReadOnlyList<ParseTree> children)
-            => new("start", children);
+        [Rule("module : block*")]
+        public static ParseTreeBranch Module(IReadOnlyList<ParseTree> children)
+            => new("module", children);
 
         [Rule("block : struct")]
         [Rule("block : definition")]
