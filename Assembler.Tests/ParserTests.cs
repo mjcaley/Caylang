@@ -1,369 +1,230 @@
-using Caylang.Assembler.ParseTree;
-using Pidgin;
-using Xunit;
+﻿using Xunit;
+using Caylang.Assembler;
 
 namespace Caylang.Assembler.Tests
 {
-    public class ParserTests
-    {
-        [Fact]
-        public void PidginCanConsumeLexerTokens()
-        {
-            var tokens = Lexer.LexString("42 i32\n");
-            var result = Parser.CaylangToken(TokenType.IntegerLiteral).ParseOrThrow(tokens);
+	public class ParserTests
+	{
+		[Fact]
+		public void ModuleNode()
+		{
+			var testData = @"
+				struct Structure
+					u64, addr
 
-            Assert.Equal(tokens[0], result);
-        }
+				define Definition i32 42
 
-        [Theory]
-        [InlineData("42 i8", 42)]
-        [InlineData("-42 i8", -42)]
-        public void ParsesInteger8Literal(string testInput, sbyte expected)
-        {
-            var tokens = Lexer.LexString(testInput);
-            var result = Parser.Literal.Parse(tokens);
+				func Function locals=0, args=0
+					ret
+			";
+			var lexer = new AsmLexer(testData);
+			var parser = new AsmParser(lexer);
+			var result = parser.ParseModule();
 
-            Assert.True(result.Success);
-            var literal = Assert.IsType<Integer8Literal>(result.Value);
-            Assert.Equal(expected, literal.Value);
-        }
+			Assert.True(result.IsOk);
+			var node = Assert.IsType<ParseTreeBranch>(result.Ok.Value);
+			Assert.Equal("module", node.Kind);
+			Assert.NotEmpty(node.Children);
+			Assert.Collection(node.Children,
+				c => Assert.Equal("struct", c.Kind),
+				c => Assert.Equal("definition", c.Kind),
+				c => Assert.Equal("function", c.Kind));
+		}
 
-        [Theory]
-        [InlineData("42 i16", 42)]
-        [InlineData("-42 i16", -42)]
-        public void ParsesInteger16Literal(string testInput, short expected)
-        {
-            var tokens = Lexer.LexString(testInput);
-            var result = Parser.Literal.Parse(tokens);
+		[Fact]
+		public void DefinitionNode()
+		{
+			var testData = @"define Definition i32 42";
+			var lexer = new AsmLexer(testData);
+			var parser = new AsmParser(lexer);
+			var result = parser.ParseDefinition();
 
-            Assert.True(result.Success);
-            var literal = Assert.IsType<Integer16Literal>(result.Value);
-            Assert.Equal(expected, literal.Value);
-        }
+			Assert.True(result.IsOk);
+			var node = Assert.IsType<ParseTreeBranch>(result.Ok.Value);
+			Assert.Equal("definition", node.Kind);
+		}
 
-        [Theory]
-        [InlineData("42 i32", 42)]
-        [InlineData("-42 i32", -42)]
-        public void ParsesInteger32Literal(string testInput, int expected)
-        {
-            var tokens = Lexer.LexString(testInput);
-            var result = Parser.Literal.Parse(tokens);
+		[Fact]
+		public void StructNode()
+		{
+			var testData = @"
+				struct Vector
+					u64, addr
+			";
+			var lexer = new AsmLexer(testData);
+			var parser = new AsmParser(lexer);
+			var result = parser.ParseStruct();
 
-            Assert.True(result.Success);
-            var literal = Assert.IsType<Integer32Literal>(result.Value);
-            Assert.Equal(expected, literal.Value);
-        }
+			Assert.True(result.IsOk);
+			var node = Assert.IsType<ParseTreeBranch>(result.Ok.Value);
+			Assert.Equal("struct", node.Kind);
+		}
 
-        [Theory]
-        [InlineData("42 i64", 42)]
-        [InlineData("-42 i64", -42)]
-        public void ParsesInteger64Literal(string testInput, long expected)
-        {
-            var tokens = Lexer.LexString(testInput);
-            var result = Parser.Literal.Parse(tokens);
+		[Theory]
+		[InlineData("i8")]
+		[InlineData("i8, i32")]
+		public void TypeListNode(string testData)
+		{
+			var lexer = new AsmLexer(testData);
+			var parser = new AsmParser(lexer);
+			var result = parser.ParseTypeList();
 
-            Assert.True(result.Success);
-            var literal = Assert.IsType<Integer64Literal>(result.Value);
-            Assert.Equal(expected, literal.Value);
-        }
+			Assert.True(result.IsOk);
+			var node = Assert.IsType<ParseTreeBranch>(result.Ok.Value);
+			Assert.Equal("type_list", node.Kind);
+			Assert.NotEmpty(node.Children);
+			Assert.All(node.Children, child => Assert.Equal("type", child.Kind));
+		}
 
-        [Fact]
-        public void ParsesUnsignedInteger8Literal()
-        {
-            var tokens = Lexer.LexString("42 u8");
-            var result = Parser.Literal.Parse(tokens);
+		[Fact]
+		public void FunctionNode()
+		{
+			var lexer = new AsmLexer(@"
+				func Function locals=4, args=2
+					ret
+			");
+			var parser = new AsmParser(lexer);
+			var result = parser.ParseFunction();
 
-            Assert.True(result.Success);
-            var literal = Assert.IsType<UnsignedInteger8Literal>(result.Value);
-            Assert.Equal((byte)42, literal.Value);
-        }
+			Assert.True(result.IsOk);
+			var node = Assert.IsType<ParseTreeBranch>(result.Ok.Value);
+			Assert.Equal("function", node.Kind);
+		}
 
-        [Fact]
-        public void ParsesUnsignedInteger16Literal()
-        {
-            var tokens = Lexer.LexString("42 u16");
-            var result = Parser.Literal.Parse(tokens);
+		[Fact]
+		public void NullaryInstructionNodeWithoutType()
+		{
+			var lexer = new AsmLexer("halt");
+			var parser = new AsmParser(lexer);
+			var result = parser.ParseNullaryInstruction();
 
-            Assert.True(result.Success);
-            var literal = Assert.IsType<UnsignedInteger16Literal>(result.Value);
-            Assert.Equal((ushort)42, literal.Value);
-        }
+			Assert.True(result.IsOk);
+			Assert.Equal("nullary_instruction", result.Ok.Value.Kind);
+			Assert.Single(result.Ok.Value.Children);
+			Assert.Equal("instruction", result.Ok.Value.Children[0].Kind);
+		}
 
-        [Fact]
-        public void ParsesUnsignedInteger32Literal()
-        {
-            var tokens = Lexer.LexString("42 u32");
-            var result = Parser.Literal.Parse(tokens);
+		[Fact]
+		public void NullaryInstructionNodeWithType()
+		{
+			var lexer = new AsmLexer("add i8");
+			var parser = new AsmParser(lexer);
+			var result = parser.ParseNullaryInstruction();
 
-            Assert.True(result.Success);
-            var literal = Assert.IsType<UnsignedInteger32Literal>(result.Value);
-            Assert.Equal(42u, literal.Value);
-        }
+			Assert.True(result.IsOk);
+			var node = Assert.IsType<ParseTreeBranch>(result.Ok.Value);
+			Assert.Equal("nullary_instruction", node.Kind);
+			Assert.Collection(node.Children,
+				c => Assert.Equal("instruction", c.Kind),
+				c => Assert.Equal("type", c.Kind));
+			Assert.Equal("instruction", node.Children[0].Kind);
+		}
 
-        [Fact]
-        public void ParsesUnsignedInteger64Literal()
-        {
-            var tokens = Lexer.LexString("42 u64");
-            var result = Parser.Literal.Parse(tokens);
+		[Theory]
+		[InlineData("i8")]
+		[InlineData("i16")]
+		[InlineData("i32")]
+		[InlineData("i64")]
+		[InlineData("u8")]
+		[InlineData("u16")]
+		[InlineData("u32")]
+		[InlineData("u64")]
+		[InlineData("f32")]
+		[InlineData("f64")]
+		[InlineData("addr")]
+		[InlineData("str")]
+		[InlineData("void")]
+		public void TypeNode(string testData)
+		{
+			var lexer = new AsmLexer(testData);
+			var parser = new AsmParser(lexer);
+			var result = parser.ParseType();
 
-            Assert.True(result.Success);
-            var literal = Assert.IsType<UnsignedInteger64Literal>(result.Value);
-            Assert.Equal(42UL, literal.Value);
-        }
+			Assert.True(result.IsOk);
+			var type = Assert.IsType<ParseTreeLeaf>(result.Ok.Value);
+			Assert.Equal("type", type.Kind);
+			Assert.Equal(testData, type.Token.Text);
+		}
 
-        [Theory]
-        [InlineData("42.42 f32", 42.42)]
-        [InlineData("-42.42 f32", -42.42)]
-        public void ParsesFloat32Literal(string testInput, float expected)
-        {
-            var tokens = Lexer.LexString(testInput);
-            var result = Parser.Literal.Parse(tokens);
+		[Theory]
+		[InlineData("42", "number")]
+		[InlineData("4.2", "number")]
+		[InlineData(@"""Forty-two""", "string")]
+		[InlineData("forty_two", "identifier")]
+		public void LiteralNode(string testData, string childKind)
+		{
+			var lexer = new AsmLexer(testData);
+			var parser = new AsmParser(lexer);
+			var result = parser.ParseLiteral();
 
-            Assert.True(result.Success);
-            var literal = Assert.IsType<Float32Literal>(result.Value);
-            Assert.Equal(expected, literal.Value);
-        }
+			Assert.True(result.IsOk);
+			var literal = Assert.IsType<ParseTreeBranch>(result.Ok.Value);
+			Assert.Equal("literal", literal.Kind);
+			Assert.Equal(childKind, literal.Children[0].Kind);
+		}
 
-        [Theory]
-        [InlineData("42.42 f64", 42.42)]
-        [InlineData("-42.42 f64", -42.42)]
-        public void ParsesFloat64Literal(string testInput, double expected)
-        {
-            var tokens = Lexer.LexString(testInput);
-            var result = Parser.Literal.Parse(tokens);
+		[Theory]
+		[InlineData("0", TokenType.DecIntegerLit)]
+		[InlineData("42", TokenType.DecIntegerLit)]
+		[InlineData("0x2a", TokenType.HexIntegerLit)]
+		[InlineData("0b101010", TokenType.BinIntegerLit)]
+		public void IntegerNode(string testData, TokenType tokenType)
+		{
+			var lexer = new AsmLexer(testData);
+			var parser = new AsmParser(lexer);
+			var result = parser.ParseInteger();
 
-            Assert.True(result.Success);
-            var literal = Assert.IsType<Float64Literal>(result.Value);
-            Assert.Equal(expected, literal.Value);
-        }
+			Assert.True(result.IsOk);
+			var literal = Assert.IsType<ParseTreeLeaf>(result.Ok.Value);
+			Assert.Equal("integer", literal.Kind);
+			Assert.Equal(testData, literal.Token.Text);
+			Assert.Equal(tokenType, literal.Token.Kind);
+		}
 
-        [Theory]
-        [InlineData("\"String literal\"")]
-        [InlineData("\"String literal\" str")]
-        public void ParsesStringLiteral(string testInput)
-        {
-            var tokens = Lexer.LexString(testInput);
-            var result = Parser.Literal.Parse(tokens);
+		[Theory]
+		[InlineData("42.0")]
+		[InlineData("42.")]
+		public void FloatNode(string testData)
+		{
+			var lexer = new AsmLexer(testData);
+			var parser = new AsmParser(lexer);
+			var result = parser.ParseFloat();
 
-            Assert.True(result.Success);
-            var literal = Assert.IsType<StringLiteral>(result.Value);
-            Assert.Equal("String literal", literal.Value);
-        }
+			Assert.True(result.IsOk);
+			var literal = Assert.IsType<ParseTreeLeaf>(result.Ok.Value);
+			Assert.Equal("float", literal.Kind);
+			Assert.Equal(testData, literal.Token.Text);
+			Assert.Equal(TokenType.FloatLit, literal.Token!.Kind);
+		}
 
-        [Fact]
-        public void ParsesIdentifierLiteral()
-        {
-            var tokens = Lexer.LexString("identifier123");
-            var result = Parser.Literal.Parse(tokens);
+		[Fact]
+		public void StringNode()
+		{
+			var testData = @"""Test data""";
+			var lexer = new AsmLexer(testData);
+			var parser = new AsmParser(lexer);
+			var result = parser.ParseString();
 
-            Assert.True(result.Success);
-            var literal = Assert.IsType<IdentifierLiteral>(result.Value);
-            Assert.Equal("identifier123", literal.Value);
-        }
+			Assert.True(result.IsOk);
+			var literal = Assert.IsType<ParseTreeLeaf>(result.Ok.Value);
+			Assert.Equal("string", literal.Kind);
+			Assert.Equal(testData, literal.Token.Text);
+			Assert.Equal(TokenType.StringLit, literal.Token.Kind);
+		}
 
-        [Fact]
-        public void ParsesLabelStatement()
-        {
-            var tokens = Lexer.LexString("label:");
-            var result = Parser.Statement.Parse(tokens);
-            
-            Assert.True(result.Success);
-            var literal = Assert.IsType<Label>(result.Value);
-            Assert.Equal("label", literal.Name);
-        }
+		[Fact]
+		public void IdentifierNode()
+		{
+			var testData = @"forty_two";
+			var lexer = new AsmLexer(testData);
+			var parser = new AsmParser(lexer);
+			var result = parser.ParseIdentifier();
 
-        [Theory]
-        [InlineData("halt", Instruction.Halt)]
-        [InlineData("nop", Instruction.Noop)]
-        [InlineData("pop", Instruction.Pop)]
-        [InlineData("ret", Instruction.Return)]
-        public void ParsesNullaryInstruction(string testInput, Instruction expectedInstruction)
-        {
-            var tokens = Lexer.LexString(testInput);
-            var result = Parser.Statement.Parse(tokens);
-            
-            Assert.True(result.Success);
-            var statement = Assert.IsType<NullaryInstruction>(result.Value);
-            Assert.Equal(expectedInstruction, statement.Instruction);
-        }
-
-        [Theory]
-        [InlineData("add", Instruction.Add)]
-        [InlineData("sub", Instruction.Subtract)]
-        [InlineData("mul", Instruction.Multiply)]
-        [InlineData("div", Instruction.Divide)]
-        [InlineData("mod", Instruction.Modulo)]
-        public void ParsesArithmeticInstruction(string testInput, Instruction expectedInstruction)
-        {
-            var tokens = Lexer.LexString(testInput);
-            var result = Parser.Statement.Parse(tokens);
-
-            Assert.True(result.Success);
-            var statement = Assert.IsType<NullaryInstruction>(result.Value);
-            Assert.Equal(expectedInstruction, statement.Instruction);
-        }
-
-        [Theory]
-        [InlineData("jmp function", Instruction.Jump)]
-        [InlineData("jmpt function", Instruction.JumpTrue)]
-        [InlineData("jmpf function", Instruction.JumpFalse)]
-        public void ParsesJumpInstruction(string testInput, Instruction expectedInstruction)
-        {
-            var tokens = Lexer.LexString(testInput);
-            var result = Parser.Statement.Parse(tokens);
-
-            Assert.True(result.Success);
-            var statement = Assert.IsType<UnaryInstruction>(result.Value);
-            Assert.Equal(expectedInstruction, statement.Instruction);
-            Assert.IsType<IdentifierLiteral>(statement.Operand);
-        }
-
-        [Fact]
-        public void ParsesCallFuncInstruction()
-        {
-            var tokens = Lexer.LexString("callfunc function");
-            var result = Parser.Statement.Parse(tokens);
-
-            Assert.True(result.Success);
-            var statement = Assert.IsType<UnaryInstruction>(result.Value);
-            Assert.IsType<IdentifierLiteral>(statement.Operand);
-        }
-
-        [Fact]
-        public void ParsesCallVirtualInstruction()
-        {
-            var tokens = Lexer.LexString("callvirt");
-            var result = Parser.Statement.Parse(tokens);
-
-            Assert.True(result.Success);
-            var statement = Assert.IsType<NullaryInstruction>(result.Value);
-            Assert.Equal(Instruction.CallVirtual, statement.Instruction);
-        }
-
-        [Theory]
-        [InlineData("ldlocal 42", Instruction.LoadLocal)]
-        [InlineData("stlocal 42", Instruction.StoreLocal)]
-        public void ParsesLocalInstructions(string testInput, Instruction expected)
-        {
-            var tokens = Lexer.LexString(testInput);
-            var result = Parser.Statement.Parse(tokens);
-            
-            Assert.True(result.Success);
-            var statement = Assert.IsType<UnaryInstruction>(result.Value);
-            Assert.Equal(expected, statement.Instruction);
-        }
-
-        [Fact]
-        public void ParsesLoadConstInstruction()
-        {
-            var tokens = Lexer.LexString("ldconst 42 i32");
-            var result = Parser.Statement.Parse(tokens);
-            
-            Assert.True(result.Success);
-            var statement = Assert.IsType<UnaryInstruction>(result.Value);
-            Assert.Equal(Instruction.LoadConst, statement.Instruction);
-        }
-
-        [Fact]
-        public void ParsesNewStructInstruction()
-        {
-            var tokens = Lexer.LexString("newstruct StructDef");
-            var result = Parser.Statement.Parse(tokens);
-
-            Assert.True(result.Success);
-            var statement = Assert.IsType<UnaryInstruction>(result.Value);
-            Assert.Equal(Instruction.NewStruct, statement.Instruction);
-            Assert.IsType<IdentifierLiteral>(statement.Operand);
-        }
-
-        [Theory]
-        [InlineData("ldfield 42", Instruction.LoadField)]
-        [InlineData("stfield 42", Instruction.StoreField)]
-        public void ParsesFieldInstructions(string testInput, Instruction expected)
-        {
-            var tokens = Lexer.LexString(testInput);
-            var result = Parser.Statement.Parse(tokens);
-            
-            Assert.True(result.Success);
-            var statement = Assert.IsType<UnaryInstruction>(result.Value);
-            Assert.Equal(expected, statement.Instruction);
-        }
-
-        [Fact]
-        public void ParsesNewArrayInstruction()
-        {
-            var tokens = Lexer.LexString("newarray StructDef");
-            var result = Parser.Statement.Parse(tokens);
-
-            Assert.True(result.Success);
-            var statement = Assert.IsType<UnaryInstruction>(result.Value);
-            Assert.Equal(Instruction.NewArray, statement.Instruction);
-            Assert.IsType<IdentifierLiteral>(statement.Operand);
-        }
-
-        [Theory]
-        [InlineData("ldelem", Instruction.LoadElement)]
-        [InlineData("stelem", Instruction.StoreElement)]
-        public void ParsesElementInstructions(string testInput, Instruction expected)
-        {
-            var tokens = Lexer.LexString(testInput);
-            var result = Parser.Statement.Parse(tokens);
-            
-            Assert.True(result.Success);
-            var statement = Assert.IsType<NullaryInstruction>(result.Value);
-            Assert.Equal(expected, statement.Instruction);
-        }
-
-        [Theory]
-        [InlineData("testeq", Instruction.TestEqual)]
-        [InlineData("testne", Instruction.TestNotEqual)]
-        [InlineData("testgt", Instruction.TestGreaterThan)]
-        [InlineData("testlt", Instruction.TestLessThan)]
-        public void ParsesTestInstruction(string testInput, Instruction expected)
-        {
-            var tokens = Lexer.LexString(testInput);
-            var result = Parser.Statement.Parse(tokens);
-
-            Assert.True(result.Success);
-            var statement = Assert.IsType<NullaryInstruction>(result.Value);
-            Assert.Equal(expected, statement.Instruction);
-        }
-
-        [Theory]
-        [InlineData("func functionName args=1 locals=2\nret\n")]
-        [InlineData("func functionName locals=2 args=1\nret\n")]
-        public void ParsesFunction(string testInput)
-        {
-            var tokens = Lexer.LexString(testInput);
-            var result = Parser.Definition.Parse(tokens);
-
-            Assert.True(result.Success);
-            var definition = Assert.IsType<FunctionDefinition>(result.Value);
-            Assert.Equal("functionName", definition.Name);
-            Assert.Equal(1, definition.Parameters.Arguments);
-            Assert.Equal(2, definition.Parameters.Locals);
-        }
-
-        [Fact]
-        public void ParsesVariable()
-        {
-            var tokens = Lexer.LexString("define number = 1 i8");
-            var result = Parser.Definition.Parse(tokens);
-
-            Assert.True(result.Success);
-            var definition = Assert.IsType<ConstantDefinition>(result.Value);
-            Assert.Equal("number", definition.Name);
-        }
-
-        [Fact]
-        public void ParsesStruct()
-        {
-            var tokens = Lexer.LexString("struct object\n\tu32,\n\taddr\n");
-            var result = Parser.Definition.Parse(tokens);
-
-            Assert.True(result.Success);
-            var definition = Assert.IsType<StructDefinition>(result.Value);
-            Assert.Equal("object", definition.Name);
-        }
-    }
+			Assert.True(result.IsOk);
+			var literal = Assert.IsType<ParseTreeLeaf>(result.Ok.Value);
+			Assert.Equal("identifier", literal.Kind);
+			Assert.Equal(testData, literal.Token.Text);
+			Assert.Equal(TokenType.Identifier, literal.Token.Kind);
+		}
+	}
 }
