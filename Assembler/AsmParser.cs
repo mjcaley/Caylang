@@ -12,49 +12,49 @@ namespace Caylang.Assembler
     public partial class AsmParser
     {
         [Rule("start : block*")]
-        public static ParseNode Start(IReadOnlyList<ParseNode> children)
+        public static ParseTreeBranch Start(IReadOnlyList<ParseTree> children)
             => new("start", children);
 
         [Rule("block : struct")]
         [Rule("block : definition")]
         [Rule("block : function")]
-        public static ParseNode Block(ParseNode child) => child;
+        public static ParseTree Block(ParseTree child) => child;
 
         [Rule("definition : DefineKw identifier type literal")]
-        public static ParseNode Definition(Token defineKeyword, ParseNode identifier, ParseNode type, ParseNode literal)
+        public static ParseTreeBranch Definition(Token defineKeyword, ParseTree identifier, ParseTree type, ParseTree literal)
         {
-            var defineNode = new ParseNode("keyword", defineKeyword);
+            var defineNode = new ParseTreeLeaf("keyword", defineKeyword);
 
             return new("definition", defineNode, identifier, type, literal);
         }
 
         [Rule("struct : StructKw identifier type_list")]
-        public static ParseNode Struct(Token structKeyword, ParseNode identifier, ParseNode types)
+        public static ParseTreeBranch Struct(Token structKeyword, ParseTree identifier, ParseTree types)
         {
-            var structNode = new ParseNode("keyword", structKeyword);
+            var structNode = new ParseTreeLeaf("keyword", structKeyword);
 
             return new("struct", structNode, identifier, types);
         }
 
         [Rule("type_list : (type (',' type)*)")]
-        public static ParseNode TypeList(Punctuated<ParseNode, Token> elements)
+        public static ParseTreeBranch TypeList(Punctuated<ParseTreeLeaf, Token> elements)
             => new("type_list", elements.Values.ToImmutableArray());
 
         [Rule("type : TypeKw")]
-        public static ParseNode Type(Token token)
+        public static ParseTreeLeaf Type(Token token)
             => new("type", token);
 
         [Rule("args : ArgsKw '=' DecIntegerLit")]
-        public static ParseNode ArgsParam(Token keyword, Token _, Token num)
-            => new("args", new("keyword", keyword), new("integer", num));
+        public static ParseTreeBranch ArgsParam(Token keyword, Token _, Token num)
+            => new("args", new ParseTreeLeaf("keyword", keyword), new ParseTreeLeaf("integer", num));
 
         [Rule("locals : LocalsKw '=' DecIntegerLit")]
-        public static ParseNode LocalsParam(Token keyword, Token _, Token num)
-            => new("locals", new("keyword", keyword), new("integer", num));
+        public static ParseTreeBranch LocalsParam(Token keyword, Token _, Token num)
+            => new("locals", new ParseTreeLeaf("keyword", keyword), new ParseTreeLeaf("integer", num));
 
         [Rule("params : locals ',' args")]
         [Rule("params : args ',' locals")]
-        public static ParseNode FunctionParams(ParseNode left, Token _, ParseNode right)
+        public static ParseTreeBranch FunctionParams(ParseTree left, Token _, ParseTree right)
         {
             if (left.Kind == "locals")
             {
@@ -67,14 +67,14 @@ namespace Caylang.Assembler
         }
 
         [Rule("function : FuncKw identifier params statement+")]
-        public static ParseNode Function(Token keyword, ParseNode identifier, ParseNode parameters, IReadOnlyList<ParseNode> statements)
-            => new("function", new("keyword", keyword), identifier, parameters, new("statements", statements));
+        public static ParseTreeBranch Function(Token keyword, ParseTree identifier, ParseTree parameters, IReadOnlyList<ParseTree> statements)
+            => new("function", new ParseTreeLeaf("keyword", keyword), identifier, parameters, new ParseTreeBranch("statements", statements));
 
         [Rule("nullary_instruction : InstructionKw type?")]
-        public static ParseNode NullaryInstruction(Token instructionToken, ParseNode? type)
+        public static ParseTreeBranch NullaryInstruction(Token instructionToken, ParseTree? type)
         {
-            var builder = ImmutableArray.CreateBuilder<ParseNode>();
-            builder.Add(new ParseNode("instruction", instructionToken));
+            var builder = ImmutableArray.CreateBuilder<ParseTree>();
+            builder.Add(new ParseTreeLeaf("instruction", instructionToken));
             if (type is not null)
             {
                 builder.Add(type);
@@ -84,14 +84,14 @@ namespace Caylang.Assembler
         }
 
         [Rule("statement : nullary_instruction | unary_instruction | label")]
-        public static ParseNode Statement(ParseNode statement)
+        public static ParseTreeBranch Statement(ParseTree statement)
             => new("statement", statement);
 
         [Rule("unary_instruction : InstructionKw type? literal?")]
-        public static ParseNode NullaryInstruction(Token instructionToken, ParseNode? type, ParseNode? literal)
+        public static ParseTreeBranch NullaryInstruction(Token instructionToken, ParseTree? type, ParseTree? literal)
         {
-            var builder = ImmutableArray.CreateBuilder<ParseNode>();
-            builder.Add(new ParseNode("instruction", instructionToken));
+            var builder = ImmutableArray.CreateBuilder<ParseTree>();
+            builder.Add(new ParseTreeLeaf("instruction", instructionToken));
             if (type is not null)
             {
                 builder.Add(type);
@@ -105,36 +105,36 @@ namespace Caylang.Assembler
         }
 
         [Rule("label : identifier ':'")]
-        public static ParseNode Label(ParseNode identifier, Token _)
+        public static ParseTreeBranch Label(ParseTree identifier, Token _)
             => new("label", identifier);
 
         [Rule("literal : number | string | identifier")]
-        public static ParseNode Literal(ParseNode child)
+        public static ParseTreeBranch Literal(ParseTree child)
             => new("literal", child);
 
         [Rule("number : (Plus | Minus)? (integer | float)")]
-        public static ParseNode Number(Token? signToken, ParseNode numberToken)
+        public static ParseTreeBranch Number(Token? signToken, ParseTree numberToken)
         {
-            var builder = ImmutableArray.CreateBuilder<ParseNode>();
+            var builder = ImmutableArray.CreateBuilder<ParseTree>();
             if (signToken is not null)
             {
-                builder.Add(new("sign", signToken));
+                builder.Add(new ParseTreeLeaf("sign", signToken));
             }
-            builder.Add(new("literal", numberToken));
+            builder.Add(new ParseTreeBranch("literal", numberToken));
 
             return new("number", builder.ToImmutable());
         }
 
         [Rule("integer : BinIntegerLit | DecIntegerLit | HexIntegerLit")]
-        public static ParseNode Integer(Token token) => new("integer", token);
+        public static ParseTreeLeaf Integer(Token token) => new("integer", token);
 
         [Rule("float : FloatLit")]
-        public static ParseNode Float(Token token) => new("float", token);
+        public static ParseTreeLeaf Float(Token token) => new("float", token);
 
         [Rule("identifier : Identifier")]
-        public static ParseNode Identifier(Token token) => new("identifier", token);
+        public static ParseTreeLeaf Identifier(Token token) => new("identifier", token);
 
         [Rule("string : StringLit")]
-        public static ParseNode String(Token token) => new("string", token);
+        public static ParseTreeLeaf String(Token token) => new("string", token);
     }
 }

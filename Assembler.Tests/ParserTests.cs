@@ -22,9 +22,10 @@ namespace Caylang.Assembler.Tests
 			var result = parser.ParseStart();
 
 			Assert.True(result.IsOk);
-			Assert.Equal("start", result.Ok.Value.Kind);
-			Assert.NotEmpty(result.Ok.Value.Children);
-			Assert.Collection(result.Ok.Value.Children,
+			var node = Assert.IsType<ParseTreeBranch>(result.Ok.Value);
+			Assert.Equal("start", node.Kind);
+			Assert.NotEmpty(node.Children);
+			Assert.Collection(node.Children,
 				c => Assert.Equal("struct", c.Kind),
 				c => Assert.Equal("definition", c.Kind),
 				c => Assert.Equal("function", c.Kind));
@@ -39,7 +40,8 @@ namespace Caylang.Assembler.Tests
 			var result = parser.ParseDefinition();
 
 			Assert.True(result.IsOk);
-			Assert.Equal("definition", result.Ok.Value.Kind);
+			var node = Assert.IsType<ParseTreeBranch>(result.Ok.Value);
+			Assert.Equal("definition", node.Kind);
 		}
 
 		[Fact]
@@ -54,7 +56,8 @@ namespace Caylang.Assembler.Tests
 			var result = parser.ParseStruct();
 
 			Assert.True(result.IsOk);
-			Assert.Equal("struct", result.Ok.Value.Kind);
+			var node = Assert.IsType<ParseTreeBranch>(result.Ok.Value);
+			Assert.Equal("struct", node.Kind);
 		}
 
 		[Theory]
@@ -67,9 +70,10 @@ namespace Caylang.Assembler.Tests
 			var result = parser.ParseTypeList();
 
 			Assert.True(result.IsOk);
-			Assert.Equal("type_list", result.Ok.Value.Kind);
-			Assert.NotEmpty(result.Ok.Value.Children);
-			Assert.All(result.Ok.Value.Children, child => Assert.Equal("type", child.Kind));
+			var node = Assert.IsType<ParseTreeBranch>(result.Ok.Value);
+			Assert.Equal("type_list", node.Kind);
+			Assert.NotEmpty(node.Children);
+			Assert.All(node.Children, child => Assert.Equal("type", child.Kind));
 		}
 
 		[Fact]
@@ -83,7 +87,8 @@ namespace Caylang.Assembler.Tests
 			var result = parser.ParseFunction();
 
 			Assert.True(result.IsOk);
-			Assert.Equal("function", result.Ok.Value.Kind);
+			var node = Assert.IsType<ParseTreeBranch>(result.Ok.Value);
+			Assert.Equal("function", node.Kind);
 		}
 
 		[Fact]
@@ -107,11 +112,12 @@ namespace Caylang.Assembler.Tests
 			var result = parser.ParseNullaryInstruction();
 
 			Assert.True(result.IsOk);
-			Assert.Equal("nullary_instruction", result.Ok.Value.Kind);
-			Assert.Collection(result.Ok.Value.Children,
+			var node = Assert.IsType<ParseTreeBranch>(result.Ok.Value);
+			Assert.Equal("nullary_instruction", node.Kind);
+			Assert.Collection(node.Children,
 				c => Assert.Equal("instruction", c.Kind),
 				c => Assert.Equal("type", c.Kind));
-			Assert.Equal("instruction", result.Ok.Value.Children[0].Kind);
+			Assert.Equal("instruction", node.Children[0].Kind);
 		}
 
 		[Theory]
@@ -135,9 +141,9 @@ namespace Caylang.Assembler.Tests
 			var result = parser.ParseType();
 
 			Assert.True(result.IsOk);
-			var type = result.Ok.Value;
+			var type = Assert.IsType<ParseTreeLeaf>(result.Ok.Value);
 			Assert.Equal("type", type.Kind);
-			Assert.Equal(testData, type.Token!.Text);
+			Assert.Equal(testData, type.Token.Text);
 		}
 
 		[Theory]
@@ -152,7 +158,7 @@ namespace Caylang.Assembler.Tests
 			var result = parser.ParseLiteral();
 
 			Assert.True(result.IsOk);
-			var literal = result.Ok.Value;
+			var literal = Assert.IsType<ParseTreeBranch>(result.Ok.Value);
 			Assert.Equal("literal", literal.Kind);
 			Assert.Equal(childKind, literal.Children[0].Kind);
 		}
@@ -169,11 +175,10 @@ namespace Caylang.Assembler.Tests
 			var result = parser.ParseInteger();
 
 			Assert.True(result.IsOk);
-			var literal = result.Ok.Value;
+			var literal = Assert.IsType<ParseTreeLeaf>(result.Ok.Value);
 			Assert.Equal("integer", literal.Kind);
-			Assert.NotNull(literal.Token);
-			Assert.Equal(testData, literal.Token!.Text);
-			Assert.Equal(tokenType, literal.Token!.Kind);
+			Assert.Equal(testData, literal.Token.Text);
+			Assert.Equal(tokenType, literal.Token.Kind);
 		}
 
 		[Theory]
@@ -186,10 +191,9 @@ namespace Caylang.Assembler.Tests
 			var result = parser.ParseFloat();
 
 			Assert.True(result.IsOk);
-			var literal = result.Ok.Value;
+			var literal = Assert.IsType<ParseTreeLeaf>(result.Ok.Value);
 			Assert.Equal("float", literal.Kind);
-			Assert.NotNull(literal.Token);
-			Assert.Equal(testData, literal.Token!.Text);
+			Assert.Equal(testData, literal.Token.Text);
 			Assert.Equal(TokenType.FloatLit, literal.Token!.Kind);
 		}
 
@@ -202,10 +206,9 @@ namespace Caylang.Assembler.Tests
 			var result = parser.ParseString();
 
 			Assert.True(result.IsOk);
-			var literal = result.Ok.Value;
+			var literal = Assert.IsType<ParseTreeLeaf>(result.Ok.Value);
 			Assert.Equal("string", literal.Kind);
-			Assert.NotNull(literal.Token);
-			Assert.Equal(testData, literal.Token!.Text);
+			Assert.Equal(testData, literal.Token.Text);
 			Assert.Equal(TokenType.StringLit, literal.Token.Kind);
 		}
 
@@ -218,10 +221,9 @@ namespace Caylang.Assembler.Tests
 			var result = parser.ParseIdentifier();
 
 			Assert.True(result.IsOk);
-			var literal = result.Ok.Value;
+			var literal = Assert.IsType<ParseTreeLeaf>(result.Ok.Value);
 			Assert.Equal("identifier", literal.Kind);
-			Assert.NotNull(literal.Token);
-			Assert.Equal(testData, literal.Token!.Text);
+			Assert.Equal(testData, literal.Token.Text);
 			Assert.Equal(TokenType.Identifier, literal.Token.Kind);
 		}
 	}
