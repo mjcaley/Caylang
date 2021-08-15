@@ -1,40 +1,43 @@
-﻿using System.Collections.Generic;
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
 using Yoakke.Lexer;
-using Yoakke.SyntaxTree.Attributes;
 
-namespace Caylang.Assembler
+namespace Caylang.Assembler.ParseTree
 {
-	[SyntaxTree]
-	public abstract partial record ParseTree
-	{
-		public ParseTree(string kind) => Kind = kind;
+	public abstract partial record Node { }
 
-		public string Kind { get; }
+	public abstract record Leaf : Node
+	{
+		public IToken<TokenType> Token { get; init; }
 	}
 
-	public partial record ParseTreeLeaf : ParseTree
+	public abstract record Branch : Node
 	{
-		public IToken<TokenType> Token { get; }
-
-		public ParseTreeLeaf(string kind, IToken<TokenType> token) : base(kind)
-			=> Token = token;
+		public ImmutableArray<Node> Children { get; init; } = ImmutableArray<Node>.Empty;
 	}
 
-	public partial record ParseTreeBranch : ParseTree
-	{
-		public ImmutableArray<ParseTree> Children { get; } = ImmutableArray<ParseTree>.Empty;
+	public record Module : Branch { }
+	public record Definition : Branch { }
+	public record Struct : Branch { }
+	public record Types : Branch { }
+	public abstract record Parameter : Branch { }
+	public record ArgsParameter : Parameter { }
+	public record LocalsParameter : Parameter { }
+	public record FunctionParameters : Branch { }
+	public record Function : Branch { }
+	public record Statements : Branch { }
+	public abstract record Statement : Branch { }
+	public record NullaryInstruction : Statement { }
+	public record UnaryInstruction : Statement { }
+	public record Label : Statement { }
+	public record Number : Branch { }
+	public record Literal : Branch { }
 
-		public ParseTreeBranch(string kind, ImmutableArray<ParseTree> children) : base(kind)
-			=> Children = children;
-
-		public ParseTreeBranch(string kind, IEnumerable<ParseTree> children) : base(kind)
-			=> Children = ImmutableArray.ToImmutableArray(children);
-
-		public ParseTreeBranch(string kind, params ParseTree[] children) : base(kind)
-			=> Children = ImmutableArray.ToImmutableArray(children);
-
-		public ParseTreeBranch(string kind, ParseTree child) : base(kind)
-			=> Children = ImmutableArray.Create(child);
-	}
+	public record Keyword : Leaf { }
+	public record Type : Leaf { }
+	public record Instruction : Leaf { }
+	public record Sign : Leaf { }
+	public record Identifier : Leaf { }
+	public record Integer : Leaf { }
+	public record Float : Leaf { }
+	public record String : Leaf { }
 }

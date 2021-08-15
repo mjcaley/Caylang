@@ -3,6 +3,7 @@ using System.Collections.Immutable;
 using Yoakke.Lexer;
 using Yoakke.Parser;
 using Yoakke.Parser.Attributes;
+using Caylang.Assembler.ParseTree;
 
 namespace Caylang.Assembler
 {
@@ -12,129 +13,152 @@ namespace Caylang.Assembler
     public partial class AsmParser
     {
         [Rule("module : block*")]
-        public static ParseTreeBranch Module(IReadOnlyList<ParseTree> children)
-            => new("module", children);
+        public static Module Module(IReadOnlyList<Branch> children)
+            => new() { Children = children.ToImmutableArray<Node>() };
 
         [Rule("block : struct")]
         [Rule("block : definition")]
         [Rule("block : function")]
-        public static ParseTree Block(ParseTree child) => child;
+        public static Branch Block(Branch child) => child;
 
         [Rule("definition : DefineKw identifier type literal")]
-        public static ParseTreeBranch Definition(Token defineKeyword, ParseTree identifier, ParseTree type, ParseTree literal)
+        public static Definition Definition(Token defineKeyword, Identifier identifier, Type type, Literal literal)
         {
-            var defineNode = new ParseTreeLeaf("keyword", defineKeyword);
+            var defineNode = new Keyword { Token = defineKeyword };
 
-            return new("definition", defineNode, identifier, type, literal);
+            return new() { Children = ImmutableArray.Create<Node>(defineNode, identifier, type, literal) };
         }
 
-        [Rule("struct : StructKw identifier type_list")]
-        public static ParseTreeBranch Struct(Token structKeyword, ParseTree identifier, ParseTree types)
+        [Rule("struct : StructKw identifier types")]
+        public static Struct Struct(Token structKeyword, Identifier identifier, Types types)
         {
-            var structNode = new ParseTreeLeaf("keyword", structKeyword);
+            var structNode = new Keyword { Token = structKeyword };
 
-            return new("struct", structNode, identifier, types);
+            return new() { Children = ImmutableArray.Create<Node>(structNode, identifier, types) };
         }
 
-        [Rule("type_list : (type (',' type)*)")]
-        public static ParseTreeBranch TypeList(Punctuated<ParseTreeLeaf, Token> elements)
-            => new("type_list", elements.Values.ToImmutableArray());
+        [Rule("types : (type (',' type)*)")]
+        public static Types Types(Punctuated<Type, Token> elements)
+            => new() { Children = elements.Values.ToImmutableArray<Node>() };
 
         [Rule("type : TypeKw")]
-        public static ParseTreeLeaf Type(Token token)
-            => new("type", token);
+        public static Type Type(Token token)
+            => new() { Token = token };
 
         [Rule("args : ArgsKw '=' DecIntegerLit")]
-        public static ParseTreeBranch ArgsParam(Token keyword, Token _, Token num)
-            => new("args", new ParseTreeLeaf("keyword", keyword), new ParseTreeLeaf("integer", num));
+        public static ArgsParameter ArgsParam(Token keyword, Token _, Token num)
+            => new()
+            {
+                Children = ImmutableArray.Create<Node>(
+                    new Keyword { Token = keyword },
+                    new Integer { Token = num })
+            };
 
         [Rule("locals : LocalsKw '=' DecIntegerLit")]
-        public static ParseTreeBranch LocalsParam(Token keyword, Token _, Token num)
-            => new("locals", new ParseTreeLeaf("keyword", keyword), new ParseTreeLeaf("integer", num));
+        public static LocalsParameter LocalsParam(Token keyword, Token _, Token num)
+            => new()
+            {
+                Children = ImmutableArray.Create<Node>(
+                    new Keyword { Token = keyword },
+                    new Integer { Token = num })
+            };
 
         [Rule("params : locals ',' args")]
         [Rule("params : args ',' locals")]
-        public static ParseTreeBranch FunctionParams(ParseTree left, Token _, ParseTree right)
+        public static FunctionParameters FunctionParams(Parameter left, Token _, Parameter right)
         {
-            if (left.Kind == "locals")
-            {
-                return new("params", left, right);
-            }
-            else
-            {
-                return new("params", right, left);
+            switch (left)
+			{
+                case LocalsParameter:
+                    return new() { Children = ImmutableArray.Create<Node>(left, right) };
+                default:
+                    return new() { Children = ImmutableArray.Create<Node>(right, left) };
             }
         }
 
         [Rule("function : FuncKw identifier params statement+")]
-        public static ParseTreeBranch Function(Token keyword, ParseTree identifier, ParseTree parameters, IReadOnlyList<ParseTree> statements)
-            => new("function", new ParseTreeLeaf("keyword", keyword), identifier, parameters, new ParseTreeBranch("statements", statements));
+        public static Function Function(Token keyword, Identifier identifier, FunctionParameters parameters, IReadOnlyList<Statement> statements)
+            => new()
+            {
+                Children = ImmutableArray.Create<Node>(
+                    new Keyword { Token = keyword },
+                    identifier,
+                    parameters,
+                    new Statements { Children = statements.ToImmutableArray<Node>() })
+            };
+
+        [Rule("statement : nullary_instruction")]
+        [Rule("statement : unary_instruction")]
+        [Rule("statement : label")]
+        public static Statement Statement(Statement statement)
+            => statement;
 
         [Rule("nullary_instruction : InstructionKw type?")]
-        public static ParseTreeBranch NullaryInstruction(Token instructionToken, ParseTree? type)
+        public static NullaryInstruction NullaryInstruction(Token instructionToken, Type? type)
         {
-            var builder = ImmutableArray.CreateBuilder<ParseTree>();
-            builder.Add(new ParseTreeLeaf("instruction", instructionToken));
+            var builder = ImmutableArray.CreateBuilder<Node>();
+            builder.Add(new Instruction { Token = instructionToken });
             if (type is not null)
             {
                 builder.Add(type);
             }
 
-            return new("nullary_instruction", builder.ToImmutable());
+            return new() { Children = builder.ToImmutable() };
         }
 
-        [Rule("statement : nullary_instruction | unary_instruction | label")]
-        public static ParseTreeBranch Statement(ParseTree statement)
-            => new("statement", statement);
-
         [Rule("unary_instruction : InstructionKw type? literal?")]
-        public static ParseTreeBranch NullaryInstruction(Token instructionToken, ParseTree? type, ParseTree? literal)
+        public static NullaryInstruction NullaryInstruction(Token instructionToken, Type? type, Literal? literal)
         {
-            var builder = ImmutableArray.CreateBuilder<ParseTree>();
-            builder.Add(new ParseTreeLeaf("instruction", instructionToken));
+            var builder = ImmutableArray.CreateBuilder<Node>();
+            builder.Add(new Instruction { Token = instructionToken });
             if (type is not null)
             {
                 builder.Add(type);
             }
             if (literal is not null)
-            {
+			{
                 builder.Add(literal);
-            }
+			}
 
-            return new("unary_instruction", builder.ToImmutable());
+            return new() { Children = builder.ToImmutable() };
         }
 
         [Rule("label : identifier ':'")]
-        public static ParseTreeBranch Label(ParseTree identifier, Token _)
-            => new("label", identifier);
+        public static Label Label(Identifier identifier, Token _)
+            => new() { Children = ImmutableArray.Create<Node>(identifier) };
 
-        [Rule("literal : number | string | identifier")]
-        public static ParseTreeBranch Literal(ParseTree child)
-            => new("literal", child);
+        [Rule("literal : number")]
+        [Rule("literal : string")]
+        [Rule("literal : identifier")]
+        public static Literal Literal(Node child)
+            => new() { Children = ImmutableArray.Create<Node>(child) };
 
-        [Rule("number : (Plus | Minus)? (integer | float)")]
-        public static ParseTreeBranch Number(Token? signToken, ParseTree numberToken)
+        [Rule("number : (Plus | Minus)? integer")]
+        [Rule("number : (Plus | Minus)? float")]
+        public static Number Number(Token? signToken, Node number)
         {
-            var builder = ImmutableArray.CreateBuilder<ParseTree>();
+            var builder = ImmutableArray.CreateBuilder<Node>();
             if (signToken is not null)
             {
-                builder.Add(new ParseTreeLeaf("sign", signToken));
+                builder.Add(new Sign { Token = signToken });
             }
-            builder.Add(new ParseTreeBranch("literal", numberToken));
+            builder.Add(number);
 
-            return new("number", builder.ToImmutable());
+            return new() { Children = builder.ToImmutable() };
         }
 
-        [Rule("integer : BinIntegerLit | DecIntegerLit | HexIntegerLit")]
-        public static ParseTreeLeaf Integer(Token token) => new("integer", token);
+        [Rule("integer : BinIntegerLit")]
+        [Rule("integer : DecIntegerLit")]
+        [Rule("integer : HexIntegerLit")]
+        public static Integer Integer(Token token) => new() { Token = token };
 
         [Rule("float : FloatLit")]
-        public static ParseTreeLeaf Float(Token token) => new("float", token);
+        public static Float Float(Token token) => new() { Token = token };
 
         [Rule("identifier : Identifier")]
-        public static ParseTreeLeaf Identifier(Token token) => new("identifier", token);
+        public static Identifier Identifier(Token token) => new() { Token = token };
 
         [Rule("string : StringLit")]
-        public static ParseTreeLeaf String(Token token) => new("string", token);
+        public static String String(Token token) => new() { Token = token };
     }
 }

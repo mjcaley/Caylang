@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Text;
+using Caylang.Assembler.ParseTree;
 
 namespace Caylang.Assembler
 {
-	class ParseTreePrinter : Pass
+	class ParseTreePrinter : DefaultVisitor, IVisitor
 	{
 		private int indentLevel = 0;
 		private const int indentLength = 4;
@@ -26,20 +27,17 @@ namespace Caylang.Assembler
 			Console.WriteLine($"{indentPrefix}{value}");
 		}
 
-		public override void Visit(ParseTreeBranch node)
+        public override void Visit(Branch node)
 		{
-			PrintLine($"{node.Kind}");
+			PrintLine($"{node.GetType()}");
 			Indent();
-			foreach (var child in node.Children)
-			{
-				Visit(child);
-			}
+			base.Visit(node);
 			Dedent();
 		}
 
-		public override void Visit(ParseTreeLeaf node)
+		public override void Visit(Leaf node)
 		{
-			PrintLine($"{node.Kind} - {node.Token.Kind} : '{node.Token.Text}'");
+			PrintLine($"{node.GetType()} - {node.Token.Kind} : '{node.Token.Text}'");
 			base.Visit(node);
 		}
 	}
